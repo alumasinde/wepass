@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Badges\Controllers;
 
+use App\Core\Permission;
 use App\Core\Response;
 use App\Core\Request;
 use App\Modules\Badges\Services\BadgeService;
@@ -27,17 +28,15 @@ final class BadgeController
 
     public function issue(Request $request, int $visitId): void
     {
-        $this->user();
+        $user = $this->user();
+        Permission::requireAny((int) $user['id'], ['badges.issue'], ['gatepass.checkin']);
 
         try {
-            // FIX: was $this->service->issue(0, $visitId) — 0 was leftover tenantId
             $badgeCode = $this->service->issue($visitId);
-
             $_SESSION['flash'] = [
                 'type'    => 'success',
                 'message' => "Badge issued successfully. Code: {$badgeCode}",
             ];
-
         } catch (\Throwable $e) {
             $_SESSION['flash'] = ['type' => 'danger', 'message' => $e->getMessage()];
         }
@@ -48,14 +47,12 @@ final class BadgeController
 
     public function return(Request $request, int $visitId): void
     {
-        $this->user();
+        $user = $this->user();
+        Permission::requireAny((int) $user['id'], ['badges.return'], ['gatepass.checkout']);
 
         try {
-            // FIX: was $this->service->returnBadge(0, $visitId) — 0 was leftover tenantId
             $this->service->returnBadge($visitId);
-
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Badge returned successfully.'];
-
         } catch (\Throwable $e) {
             $_SESSION['flash'] = ['type' => 'danger', 'message' => $e->getMessage()];
         }
