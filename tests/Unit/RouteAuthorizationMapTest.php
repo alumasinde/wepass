@@ -104,4 +104,19 @@ final class RouteAuthorizationMapTest extends TestCase
             }
         }
     }
+
+    public function test_legacy_compatibility_permissions_are_explicitly_scoped(): void
+    {
+        $rules = $this->routeRules();
+
+        self::assertContains('gatepass.view', $rules['GET']['#^/visitors$#']);
+        self::assertContains('gatepass.view_all', $rules['GET']['#^/visitors$#']);
+        self::assertContains('gatepass.create', $rules['POST']['#^/visits$#']);
+        self::assertContains('gatepass.checkin', $rules['POST']['#^/visits/\\d+/checkin$#']);
+        self::assertContains('gatepass.checkout', $rules['POST']['#^/visits/\\d+/checkout$#']);
+        self::assertContains('gatepass.checkin', $rules['POST']['#^/badges/\\d+/issue$#']);
+        self::assertContains('gatepass.checkout', $rules['POST']['#^/badges/\\d+/return$#']);
+        self::assertContains('gatepass.view_all', $rules['GET']['#^/reports$#']);
+        self::assertContains('gatepass.view_all', $rules['POST']['#^/reports/(gatepasses|visitors|visits)/export$#']);
+    }
 }
