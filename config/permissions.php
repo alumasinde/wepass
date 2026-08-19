@@ -9,7 +9,9 @@ return [
     |
     | module => actions[]
     |
-    | These are used ONLY for seeding the database.
+    | These keys are the canonical authorization vocabulary. The
+    | database stores module/action separately; application checks use
+    | the normalized "module.action" form.
     |
     */
 
@@ -20,7 +22,7 @@ return [
     'gatepass' => [
         'create',
         'view',
-        'view_all', // see/act on every department's gatepasses, not just your own — replaces the old hardcoded role-name check ('admin'/'General Manager'/'superadmin') in GatepassService::list()
+        'view_all',
         'update',
         'delete',
         'approve',
@@ -36,6 +38,20 @@ return [
         'blacklist'
     ],
 
+    'visits' => [
+        'create',
+        'view',
+        'view_all',
+        'checkin',
+        'checkout'
+    ],
+
+    'badges' => [
+        'view',
+        'issue',
+        'return'
+    ],
+
     'users' => [
         'create',
         'view',
@@ -44,17 +60,30 @@ return [
     ],
 
     'roles' => [
+        'view',
         'create',
         'assign',
         'update'
     ],
 
     'settings' => [
+        'view',
         'update'
     ],
 
+    'reports' => [
+        'view',
+        'export'
+    ],
+
     'audit' => [
-        'view'
+        'view',
+        'export'
+    ],
+
+    'delegation' => [
+        'view',
+        'manage'
     ]
 
 ];
