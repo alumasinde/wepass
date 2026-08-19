@@ -1,0 +1,91 @@
+-- ============================================================
+-- Glee GPMS | 007_gate_security.sql
+-- Gate/device administration + immutable-ish scan event trail.
+-- MySQL 8.0+
+-- ============================================================
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE TABLE IF NOT EXISTS `gates` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(150) NOT NULL,
+  `code` varchar(80) NOT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_gate_code` (`code`),
+  KEY `idx_gate_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `approved_devices` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `device_uuid` varchar(191) NOT NULL,
+  `device_name` varchar(150) NOT NULL,
+  `device_secret_hash` char(64) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `revoked_at` datetime DEFAULT NULL,
+  `last_seen_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_device_uuid` (`device_uuid`),
+  KEY `idx_device_active` (`is_active`,`revoked_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `gate_device_assignments` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `gate_id` bigint unsigned NOT NULL,
+  `device_id` bigint unsigned NOT NULL,
+  `guard_user_id` bigint unsigned DEFAULT NULL,
+  `starts_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `ends_at` datetime DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_gda_gate_active` (`gate_id`,`is_active`),
+  KEY `idx_gda_device_active` (`device_id`,`is_active`),
+  KEY `idx_gda_guard` (`guard_user_id`),
+  CONSTRAINT `fk_gda_gate` FOREIGN KEY (`gate_id`) REFERENCES `gates` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_gda_device` FOREIGN KEY (`device_id`) REFERENCES `approved_devices` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_gda_guard` FOREIGN KEY (`guard_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `gate_scan_events` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `gate_id` bigint unsigned NOT NULL,
+  `device_id` bigint unsigned NOT NULL,
+  `guard_user_id` bigint unsigned DEFAULT NULL,
+  `gatepass_id` bigint unsigned DEFAULT NULL,
+  `visit_id` bigint unsigned DEFAULT NULL,
+  `scan_type` varchar(40) NOT NULL,
+  `result` varchar(40) NOT NULL,
+  `reason_code` varchar(80) DEFAULT NULL,
+  `request_id` varchar(100) NOT NULL,
+  `qr_token_hash` char(64) DEFAULT NULL,
+  `scanned_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `client_ip` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(500) DEFAULT NULL,
+  `metadata_json` json DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_scan_request` (`request_id`),
+  KEY `idx_scan_gate_time` (`gate_id`,`scanned_at`),
+  KEY `idx_scan_device_time` (`device_id`,`scanned_at`),
+  KEY `idx_scan_gatepass_time` (`gatepass_id`,`scanned_at`),
+  KEY `idx_scan_result_time` (`result`,`scanned_at`),
+  CONSTRAINT `fk_scan_gate` FOREIGN KEY (`gate_id`) REFERENCES `gates` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_scan_device` FOREIGN KEY (`device_id`) REFERENCES `approved_devices` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_scan_guard` FOREIGN KEY (`guard_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_scan_gatepass` FOREIGN KEY (`gatepass_id`) REFERENCES `gatepasses` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_scan_visit` FOREIGN KEY (`visit_id`) REFERENCES `visits` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Opaque QR credential fields used by GateSecurityService.
+ALTER TABLE `gatepasses` ADD COLUMN `qr_token_hash` char(64) DEFAULT NULL AFTER `qr_code_path`;
+ALTER TABLE `gatepasses` ADD COLUMN `qr_issued_at` datetime DEFAULT NULL AFTER `qr_token_hash`;
+ALTER TABLE `gatepasses` ADD COLUMN `qr_expires_at` datetime DEFAULT NULL AFTER `qr_issued_at`;
+ALTER TABLE `gatepasses` ADD COLUMN `qr_revoked_at` datetime DEFAULT NULL AFTER `qr_expires_at`;
+ALTER TABLE `gatepasses` ADD KEY `idx_gatepasses_qr_hash` (`qr_token_hash`);
+
+SET FOREIGN_KEY_CHECKS = 1;
