@@ -10,16 +10,19 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
 use App\Modules\Visits\DTOs\VisitDTO;
+use App\Modules\Visits\Policies\VisitPolicy;
 use App\Modules\Visits\Services\VisitService;
 use RuntimeException;
 
 final class VisitController extends Controller
 {
     private VisitService $service;
+    private VisitPolicy $policy;
 
     public function __construct()
     {
         $this->service = new VisitService();
+        $this->policy = new VisitPolicy(new Permission());
     }
 
     private function user(): array
@@ -32,19 +35,24 @@ final class VisitController extends Controller
 
     public function index(): void
     {
-        $this->user();
+        $user = $this->user();
+        if (!Permission::userHasAnyPermission((int) $user['id'], ['visits.view', 'visits.view_all'])) {
+            Response::abort(403);
+        }
+
         $visits = $this->service->activeVisits();
+        $visits = array_values(array_filter($visits, fn(array $visit): bool => $this->policy->view($user, $visit)));
+
         View::render('Visits::index', ['visits' => $visits], 'app');
     }
 
     public function create(Request $request): void
     {
-        $user      = $this->user();
+        $user = $this->user();
         Permission::requireAny((int) $user['id'], ['visits.create'], ['gatepass.create']);
 
         $visitorId = (int) $request->input('visitor_id');
-        $visitor   = null;
-
+        $visitor = null;
         if ($visitorId > 0) {
             $visitor = $this->service->getVisitor($visitorId);
             if (!$visitor) {
@@ -55,10 +63,10 @@ final class VisitController extends Controller
         }
 
         View::render('Visits::create', [
-            'visitor'     => $visitor,
+            'visitor' => $visitor,
             'departments' => $this->service->getDepartments(),
-            'hosts'       => $this->service->getHosts(),
-            'visitTypes'  => $this->service->getVisitTypes(),
+            'hosts' => $this->service->getHosts(),
+            'visitTypes' => $this->service->getVisitTypes(),
         ], 'app');
     }
 
@@ -83,6 +91,10 @@ final class VisitController extends Controller
     {
         $user = $this->user();
         Permission::requireAny((int) $user['id'], ['visits.checkin'], ['gatepass.checkin']);
+        $visit = $this->service->find($id);
+        if (!$visit || !$this->policy->checkIn($user, $visit)) {
+            Response::abort(403);
+        }
 
         try {
             $this->service->checkIn($id);
@@ -99,6 +111,10 @@ final class VisitController extends Controller
     {
         $user = $this->user();
         Permission::requireAny((int) $user['id'], ['visits.checkout'], ['gatepass.checkout']);
+        $visit = $this->service->find($id);
+        if (!$visit || !$this->policy->checkOut($user, $visit)) {
+            Response::abort(403);
+        }
 
         try {
             $this->service->checkOut($id);
