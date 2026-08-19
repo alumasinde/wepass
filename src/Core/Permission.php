@@ -4,15 +4,28 @@ declare(strict_types=1);
 
 namespace App\Core;
 
-use App\Core\TenantContext;
-use App\Core\Response;
-
 final class Permission
 {
+    public function __construct(private readonly ?int $userId = null) {}
+
+    public function can(string $permission, ?int $userId = null, ?int $tenantId = null): bool
+    {
+        $userId ??= $this->userId;
+        if ($userId === null) {
+            return false;
+        }
+
+        return self::userHasPermission($userId, $permission, $tenantId);
+    }
+
     public static function userHasPermission(int $userId, string $permission, ?int $tenantId = null): bool
     {
-        $tenantId ??= TenantContext::id();
-        if ($tenantId === null || $userId <= 0 || trim($permission) === '') {
+        if ($userId <= 0 || trim($permission) === '') {
+            return false;
+        }
+
+        $tenantId ??= self::tenantIdFromContext();
+        if ($tenantId === null) {
             return false;
         }
 
@@ -50,11 +63,6 @@ final class Permission
         return false;
     }
 
-    /**
-     * Require at least one permission. The fallback list is temporary
-     * compatibility for installations upgrading to the granular Phase 2
-     * permission model; it can be removed once roles are migrated.
-     */
     public static function requireAny(int $userId, array $permissions, array $fallbackPermissions = []): void
     {
         if (self::userHasAnyPermission($userId, $permissions)) {
@@ -66,5 +74,17 @@ final class Permission
         }
 
         Response::abort(403);
+    }
+
+    private static function tenantIdFromContext(): ?int
+    {
+        if (!TenantContext::hasTenant()) {
+            return null;
+        }
+
+        $tenant = TenantContext::tenant();
+        $id = $tenant['id'] ?? null;
+
+        return is_numeric($id) && (int) $id > 0 ? (int) $id : null;
     }
 }
