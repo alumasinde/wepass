@@ -1,30 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Middleware;
 
+use App\Core\Auth;
 use App\Core\Permission;
-use App\Core\Request;
 use App\Core\Response;
+use App\Core\TenantContext;
 
-/**
- * PermissionMiddleware — guards a route behind a specific permission
- * key (e.g. "gatepasses.create", "settings.manage_users").
- *
- * Attach via the array form so the permission string is passed as a
- * parameter:
- *
- *   $router->get('/settings/users', [UserManagementController::class, 'index'],
- *       [AuthMiddleware::class, [PermissionMiddleware::class, 'settings.manage_users']]
- *   );
- */
-class PermissionMiddleware
+final class PermissionMiddleware
 {
-    public function handle(Request $request, string $permission): void
+    public function __construct(private string $permission)
     {
-        $perm = new Permission(\App\Core\DB::connect());
+    }
 
-        if (!$perm->can($permission)) {
-            Response::abort(403, "You don't have permission to do that ({$permission}).");
+    public function handle(callable $next, ...$args): mixed
+    {
+        $userId = Auth::userId();
+        if ($userId === null) {
+            return Response::json(['error' => 'Unauthenticated'], 401);
         }
+
+        $tenantId = TenantContext::id();
+        if ($tenantId === null) {
+            return Response::json(['error' => 'Tenant context unavailable'], 403);
+        }
+
+        if (!Permission::userHasPermission($userId, $this->permission, $tenantId)) {
+            return Response::json(['error' => 'Forbidden'], 403);
+        }
+
+        return $next(...$args);
     }
 }

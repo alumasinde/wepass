@@ -1,64 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Core;
 
-use PDO;
+use App\Core\TenantContext;
 
-class Permission
+final class Permission
 {
-    private array $permissions = [];
-
-    public function __construct(private PDO $db)
+    public static function userHasPermission(int $userId, string $permission, ?int $tenantId = null): bool
     {
+        $tenantId ??= TenantContext::id();
+        if ($tenantId === null) {
+            return false;
+        }
+
+        $db = DB::tenant();
+        $stmt = $db->prepare(
+            'SELECT 1
+             FROM user_roles ur
+             INNER JOIN role_permissions rp ON rp.role_id = ur.role_id
+             INNER JOIN permissions p ON p.id = rp.permission_id
+             WHERE ur.user_id = ? AND p.name = ? AND p.is_active = 1
+             LIMIT 1'
+        );
+        $stmt->execute([$userId, $permission]);
+
+        return (bool) $stmt->fetchColumn();
     }
 
-    /**
-     * Load permissions into session
-     */
-    public function loadForUser(int $userId): void
-{
-    $stmt = $this->db->prepare("
-        SELECT m.name AS module, a.name AS action
-        FROM user_roles ur
-        JOIN role_permissions rp ON rp.role_id = ur.role_id
-        JOIN permissions p ON p.id = rp.permission_id
-        JOIN modules m ON m.id = p.module_id
-        JOIN actions a ON a.id = p.action_id
-        WHERE ur.user_id = ?
-    ");
-
-    $stmt->execute([$userId]);
-
-    $perms = [];
-
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $key = strtolower($row['module']) . '.' . strtolower($row['action']);
-        $perms[$key] = true;
-    }
-
-    $_SESSION['permissions'] = $perms;
-    $this->permissions = $perms;
-}
-
-    /**
-     * Check permission
-     */
-    public function can(string $permission): bool
-{
-    // SUPER ADMIN shortcut
-    if (!empty($_SESSION['is_super_admin'])) {
-        return true;
-    }
-
-    return isset($_SESSION['permissions'][$permission]);
-}
-
-
-    /**
-     * Debug helper
-     */
-    public function all(): array
+    public static function userHasAnyPermission(int $userId, array $permissions, ?int $tenantId = null): bool
     {
-        return $_SESSION['permissions'] ?? [];
+        foreach ($permissions as $permission) {
+            if (self::userHasPermission($userId, (string) $permission, $tenantId)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
