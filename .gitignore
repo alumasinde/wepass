@@ -1,0 +1,8 @@
+/vendor/
+/config/config.ini
+/storage/logs/*
+/storage/keys/*
+/public_html/uploads/*
+*.log
+.env
+.DS_Store
