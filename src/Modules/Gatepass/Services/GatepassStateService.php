@@ -39,6 +39,8 @@ final class GatepassStateService
             throw new RuntimeException('Gatepass cannot transition to the same state.');
         }
 
+        GatepassTransitionGuard::assert($fromStatusCode, $toStatusCode, $transitionCode);
+
         $this->db->beginTransaction();
         try {
             $status = $this->db->prepare(
