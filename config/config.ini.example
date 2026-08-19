@@ -74,8 +74,12 @@ approval_lockout_seconds = 60
 admin_mutation_max_attempts = 60
 admin_mutation_lockout_seconds = 60
 bcrypt_rounds = 12
-; Lifetime of opaque QR credentials. 1 day by default; valid range is 60..2592000 seconds.
+; Lifetime of opaque gatepass QR credentials. Valid range 60..2592000 seconds.
 qr_ttl_seconds = 86400
+; Lifetime of visitor pre-visit QR credentials. Valid range 60..2592000 seconds.
+previsit_qr_ttl_seconds = 86400
+; Allowed early-arrival window for pre-visit gate validation.
+previsit_scan_window_seconds = 7200
 trusted_proxies = ""
 
 [features]
@@ -95,7 +99,6 @@ from_address = "no-reply@glee-gpms.local"
 from_name = "Glee GPMS"
 
 [qr]
-; QR images are cached locally; the generator is not required during scanning.
 service_url = "http://127.0.0.1:8081"
 timeout_seconds = 5
 
