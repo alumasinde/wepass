@@ -16,8 +16,12 @@ final class Permission
     public function can(string $permission, ?int $userId = null, ?int $tenantId = null): bool
     {
         $userId ??= isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : null;
-        if ($userId === null || $userId <= 0) {
+        if ($userId === null || $userId <= 0 || trim($permission) === '') {
             return false;
+        }
+
+        if (!empty($_SESSION['is_super_admin'])) {
+            return true;
         }
 
         return self::userHasPermission($userId, $permission, $tenantId);
@@ -27,6 +31,10 @@ final class Permission
     {
         if ($userId <= 0 || trim($permission) === '') {
             return false;
+        }
+
+        if (!empty($_SESSION['is_super_admin']) && (int) ($_SESSION['user']['id'] ?? $userId) === $userId) {
+            return true;
         }
 
         $tenantId ??= self::tenantIdFromContext();
