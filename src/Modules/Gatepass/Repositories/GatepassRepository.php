@@ -35,17 +35,14 @@ final class GatepassRepository
             if ($fromStatus === false) {
                 throw new InvalidArgumentException('Gatepass not found.');
             }
-
             $toStatus = $this->statusCodeById($checkedInStatusId);
             if (strcasecmp((string)$fromStatus, $this->statusCodeById($expectedCurrentStatusId)) !== 0) {
-                throw new RuntimeException('Gatepass state changed concurrently.');
+                throw new \RuntimeException('Gatepass state changed concurrently.');
             }
             GatepassTransitionGuard::assert((string)$fromStatus, $toStatus, 'CHECKIN');
-
             $stmt=$this->db->prepare('UPDATE gatepasses SET actual_in=:timestamp,checked_in_by=:user_id,status_id=:checked_in_status WHERE id=:id AND actual_in IS NULL AND status_id=:expected_status AND deleted_at IS NULL');
             $stmt->execute([':timestamp'=>$timestamp,':user_id'=>$userId,':checked_in_status'=>$checkedInStatusId,':id'=>$gatepassId,':expected_status'=>$expectedCurrentStatusId]);
-            if($stmt->rowCount()!==1){throw new RuntimeException('Check-in failed. Gatepass may have been modified concurrently.');}
-
+            if($stmt->rowCount()!==1){throw new \RuntimeException('Check-in failed. Gatepass may have been modified concurrently.');}
             $history=$this->db->prepare('INSERT INTO gatepass_state_history (gatepass_id,from_status_id,to_status_id,transition_code,actor_user_id,reason,metadata_json) VALUES (:gatepass_id,:from_status,:to_status,:transition_code,:actor,:reason,:metadata)');
             $history->execute([':gatepass_id'=>$gatepassId,':from_status'=>$expectedCurrentStatusId,':to_status'=>$checkedInStatusId,':transition_code'=>'CHECKIN',':actor'=>$userId,':reason'=>null,':metadata'=>json_encode(['actual_in'=>$timestamp],JSON_UNESCAPED_SLASHES)]);
             $this->db->commit();
@@ -66,17 +63,14 @@ final class GatepassRepository
             if ($fromStatus === false) {
                 throw new InvalidArgumentException('Gatepass not found.');
             }
-
             $toStatus = $this->statusCodeById($checkedOutStatusId);
             if (strcasecmp((string)$fromStatus, $this->statusCodeById($expectedCurrentStatusId)) !== 0) {
-                throw new RuntimeException('Gatepass state changed concurrently.');
+                throw new \RuntimeException('Gatepass state changed concurrently.');
             }
             GatepassTransitionGuard::assert((string)$fromStatus, $toStatus, 'CHECKOUT');
-
             $stmt=$this->db->prepare('UPDATE gatepasses SET actual_out=:timestamp,checked_out_by=:user_id,status_id=:status_id WHERE id=:id AND actual_out IS NULL AND status_id=:expected_status AND deleted_at IS NULL');
             $stmt->execute([':timestamp'=>$timestamp,':user_id'=>$userId,':status_id'=>$checkedOutStatusId,':id'=>$gatepassId,':expected_status'=>$expectedCurrentStatusId]);
-            if($stmt->rowCount()!==1){throw new RuntimeException('Checkout failed. Gatepass may have been modified concurrently.');}
-
+            if($stmt->rowCount()!==1){throw new \RuntimeException('Checkout failed. Gatepass may have been modified concurrently.');}
             $history=$this->db->prepare('INSERT INTO gatepass_state_history (gatepass_id,from_status_id,to_status_id,transition_code,actor_user_id,reason,metadata_json) VALUES (:gatepass_id,:from_status,:to_status,:transition_code,:actor,:reason,:metadata)');
             $history->execute([':gatepass_id'=>$gatepassId,':from_status'=>$expectedCurrentStatusId,':to_status'=>$checkedOutStatusId,':transition_code'=>'CHECKOUT',':actor'=>$userId,':reason'=>null,':metadata'=>json_encode(['actual_out'=>$timestamp],JSON_UNESCAPED_SLASHES)]);
             $this->db->commit();
