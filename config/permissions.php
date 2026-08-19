@@ -1,80 +1,36 @@
 <?php
 
 return [
-
-    'dashboard' => [
-        'access'
-    ],
+    'dashboard' => ['access'],
 
     'gatepass' => [
-        'create',
-        'view',
-        'view_all',
-        'update',
-        'delete',
-        'approve',
-        'checkin',
-        'checkout',
-        'print'
+        'create', 'view', 'view_all', 'update', 'delete',
+        'approve', 'checkin', 'checkout', 'print'
     ],
 
     'visitors' => [
-        'create',
-        'view',
-        'view_all',
-        'update',
-        'update_all',
-        'delete',
-        'blacklist',
-        'manage',
-        'issue_badge'
+        'create', 'view', 'view_all', 'update', 'update_all',
+        'delete', 'blacklist', 'manage', 'issue_badge'
     ],
 
     'visits' => [
-        'create',
-        'view',
-        'view_all',
-        'checkin',
-        'checkout'
+        'create', 'view', 'view_all', 'checkin', 'checkout'
     ],
 
-    'badges' => [
-        'view',
-        'issue',
-        'return'
-    ],
+    'badges' => ['view', 'issue', 'return'],
 
-    'users' => [
-        'create',
-        'view',
-        'update',
-        'disable'
-    ],
+    'users' => ['create', 'view', 'update', 'disable'],
 
-    'roles' => [
-        'view',
-        'create',
-        'assign',
-        'update'
-    ],
+    'roles' => ['view', 'create', 'assign', 'update'],
 
-    'settings' => [
-        'view',
-        'update'
-    ],
+    'settings' => ['view', 'update'],
 
-    'reports' => [
-        'view',
-        'export'
-    ],
+    'reports' => ['view', 'export'],
 
-    'audit' => [
-        'view',
-        'export'
-    ],
+    'audit' => ['view', 'export'],
 
-    'delegation' => [
-        'view',
-        'manage'
-    ]
+    'delegation' => ['view', 'manage'],
+
+    // ApprovalPolicy already relies on these normalized capabilities.
+    'approval' => ['view', 'approve', 'reject'],
 ];
