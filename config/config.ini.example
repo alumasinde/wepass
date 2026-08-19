@@ -1,0 +1,155 @@
+; ============================================================
+; Glee GPMS — config.ini.example
+; Copy to config/config.ini and fill in real values.
+; config/config.ini is gitignored — never commit real credentials.
+; Per-machine overrides (e.g. a dev's local DB) go in
+; config/setup.ini, which is merged on top of this file.
+; ============================================================
+
+[app]
+name    = "GatePass Management System"
+env     = local          ; local | staging | production
+debug   = false           ; MUST be false in staging/production
+url     = "http://localhost"
+timezone = "Africa/Nairobi"
+
+[mysql]
+; Admin/root-level MySQL account — the ONLY section with privilege
+; to CREATE DATABASE. Used by database/migrate.php, database/Seeder.php,
+; and TenantService::provisionTenant() (the "create tenant via UI" flow)
+; to provision new tenant databases. [database] below should be a
+; separate, least-privilege account scoped to just the active tenant
+; DB — don't reuse this one there if you can avoid it.
+host     = 127.0.0.1
+port     = 3306
+username = ""
+password = ""
+
+[database]
+; Active tenant DB — overridden at runtime per-tenant once a
+; tenant is resolved from [tenant] below / glee_master.tenants.
+; Ideally a least-privilege account (SELECT/INSERT/UPDATE/DELETE
+; on this one DB only — no CREATE/DROP), separate from [mysql].
+host     = 127.0.0.1
+port     = 3306
+name     = glee_tenant_default
+username = ""
+password = ""
+charset  = utf8mb4
+persistent = false
+
+; OPTIONAL — only needed if your host blocks CREATE DATABASE over a
+; plain MySQL connection (common on shared DirectAdmin/cPanel
+; hosting). When host is set below, tenant provisioning creates each
+; new database via the hosting panel's API instead of direct SQL.
+; Leave host blank on a VPS where your MySQL user already has
+; CREATE DATABASE.
+[directadmin]
+host             = ""
+port             = 2222
+username         = ""
+login_key        = ""
+verify_ssl       = true
+runtime_db_user  = ""                     ; no longer used by provisioning — see the note in config.ini
+
+[master_db]
+; glee_master — holds the tenants registry. Every install needs
+; this regardless of which tenant is active. Same account as
+; [database] is fine here (both are app-level, not admin/root).
+host     = 127.0.0.1
+port     = 3306
+name     = glee_master
+username = ""
+password = ""
+
+[platform]
+; DYNAMIC DOMAIN MODE — set base_domain to run ONE deployment for
+; every tenant, resolved per-request from the Host header instead
+; of a separate config.ini per client:
+;   - "{code}.base_domain"      -> that tenant (subdomain)
+;   - "admin_subdomain.base_domain" -> the platform/tenant-management panel
+;   - base_domain / www.base_domain -> reserved for your public site
+;   - any other host             -> looked up as a tenant's custom_domain
+; Leave base_domain BLANK to keep legacy mode: this deployment
+; serves exactly the tenant in [tenant] code below (or, if that's
+; blank too, this deployment IS the admin panel). Existing
+; single-tenant deployments don't need to change anything.
+base_domain     = ""
+admin_subdomain = "manage"
+
+[tenant]
+; LEGACY MODE ONLY (ignored when [platform] base_domain is set).
+; Identity of the tenant this deployment serves. Leave code blank
+; only for the legacy-mode admin/onboarding install.
+code = ""
+name = "Glee GPMS"
+plan = "starter"
+logo = "/assets/images/default-logoo.png"
+
+[gatepass]
+prefix   = "GP"
+zero_pad = 5
+
+[session]
+name     = glee_session
+lifetime = 7200          ; seconds
+httponly = true
+secure   = false          ; set true once served over HTTPS
+samesite = Strict
+
+[security]
+; Consumed by RateLimiter-backed middleware in routes/web.php.
+; Tune per deployment without touching code.
+login_max_attempts    = 5
+login_lockout_seconds = 300
+reset_max_attempts    = 5
+reset_lockout_seconds = 900
+scan_max_attempts     = 60
+scan_lockout_seconds  = 60
+approval_max_attempts    = 30
+approval_lockout_seconds = 60
+admin_mutation_max_attempts    = 60
+admin_mutation_lockout_seconds = 60
+bcrypt_rounds         = 12
+
+; Leave blank unless behind a known reverse proxy/load balancer/CDN —
+; see the comment in config.ini for details.
+trusted_proxies = ""
+
+[features]
+badges       = true
+qr_codes     = true
+risk_engine  = true
+
+[mail]
+; driver = log  -> never sends; writes to mail_log + storage/mail/*.html (safe default)
+; driver = smtp -> sends for real via App\Core\Mailer
+driver       = log
+host         = ""
+port         = 587
+encryption   = tls        ; tls | ssl | none
+username     = ""
+password     = ""
+timeout      = 10
+from_address = "no-reply@glee-gpms.local"
+from_name    = "Glee GPMS"
+
+[qr]
+; Where the QR image generator microservice lives. QRService caches
+; every generated code to public/uploads/qrcodes/, so this service
+; only needs to be reachable at gatepass-creation time — gate
+; scanning never depends on it being up.
+service_url     = "http://127.0.0.1:8081"
+timeout_seconds = 5
+
+[audit]
+retention_days = 365
+
+[tenant_admin]
+; Only used by database/Seeder.php (CLI dev-tenant provisioning) —
+; NOT used in production. Creates this tenant's first admin.
+; Omit `password` and one is generated and printed once.
+email      = ""
+first_name = "Admin"
+last_name  = ""
+password   = ""
