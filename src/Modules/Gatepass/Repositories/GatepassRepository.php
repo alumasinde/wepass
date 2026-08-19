@@ -5,6 +5,7 @@ namespace App\Modules\Gatepass\Repositories;
 
 use App\Core\DB;
 use App\Core\SearchBuilder;
+use App\Modules\Gatepass\Services\GatepassTransitionGuard;
 use InvalidArgumentException;
 use PDO;
 
@@ -23,8 +24,78 @@ final class GatepassRepository
     public function updateQrPath(int $id,string $qrCodePath):bool{$stmt=$this->db->prepare('UPDATE gatepasses SET qr_code_path=:qr WHERE id=:id');$stmt->execute([':qr'=>$qrCodePath,':id'=>$id]);return $stmt->rowCount()>0;}
     public function revokeQr(int $id):bool{$stmt=$this->db->prepare('UPDATE gatepasses SET qr_revoked_at=NOW() WHERE id=:id AND qr_revoked_at IS NULL');$stmt->execute([':id'=>$id]);return $stmt->rowCount()>0;}
     public function updateStatus(int $id,int $statusId):bool{$stmt=$this->db->prepare('UPDATE gatepasses SET status_id=:status_id WHERE id=:id');$stmt->execute([':status_id'=>$statusId,':id'=>$id]);return $stmt->rowCount()>0;}
-    public function checkIn(int $gatepassId,int $userId,string $timestamp,int $checkedInStatusId,int $expectedCurrentStatusId):bool{$stmt=$this->db->prepare('UPDATE gatepasses SET actual_in=:timestamp,checked_in_by=:user_id,status_id=:checked_in_status WHERE id=:id AND actual_in IS NULL AND status_id=:expected_status');$stmt->execute([':timestamp'=>$timestamp,':user_id'=>$userId,':checked_in_status'=>$checkedInStatusId,':id'=>$gatepassId,':expected_status'=>$expectedCurrentStatusId]);return $stmt->rowCount()>0;}
-    public function checkOut(int $gatepassId,int $userId,string $timestamp,int $checkedOutStatusId,int $expectedCurrentStatusId):bool{$stmt=$this->db->prepare('UPDATE gatepasses SET actual_out=:timestamp,checked_out_by=:user_id,status_id=:status_id WHERE id=:id AND actual_out IS NULL AND status_id=:expected_status');$stmt->execute([':timestamp'=>$timestamp,':user_id'=>$userId,':status_id'=>$checkedOutStatusId,':id'=>$gatepassId,':expected_status'=>$expectedCurrentStatusId]);return $stmt->rowCount()>0;}
+
+    public function checkIn(int $gatepassId,int $userId,string $timestamp,int $checkedInStatusId,int $expectedCurrentStatusId):bool
+    {
+        $this->db->beginTransaction();
+        try {
+            $current = $this->db->prepare('SELECT s.code FROM gatepasses g INNER JOIN gatepass_statuses s ON s.id=g.status_id WHERE g.id=:id AND g.deleted_at IS NULL FOR UPDATE');
+            $current->execute([':id'=>$gatepassId]);
+            $fromStatus = $current->fetchColumn();
+            if ($fromStatus === false) {
+                throw new InvalidArgumentException('Gatepass not found.');
+            }
+
+            $toStatus = $this->statusCodeById($checkedInStatusId);
+            if (strcasecmp((string)$fromStatus, $this->statusCodeById($expectedCurrentStatusId)) !== 0) {
+                throw new RuntimeException('Gatepass state changed concurrently.');
+            }
+            GatepassTransitionGuard::assert((string)$fromStatus, $toStatus, 'CHECKIN');
+
+            $stmt=$this->db->prepare('UPDATE gatepasses SET actual_in=:timestamp,checked_in_by=:user_id,status_id=:checked_in_status WHERE id=:id AND actual_in IS NULL AND status_id=:expected_status AND deleted_at IS NULL');
+            $stmt->execute([':timestamp'=>$timestamp,':user_id'=>$userId,':checked_in_status'=>$checkedInStatusId,':id'=>$gatepassId,':expected_status'=>$expectedCurrentStatusId]);
+            if($stmt->rowCount()!==1){throw new RuntimeException('Check-in failed. Gatepass may have been modified concurrently.');}
+
+            $history=$this->db->prepare('INSERT INTO gatepass_state_history (gatepass_id,from_status_id,to_status_id,transition_code,actor_user_id,reason,metadata_json) VALUES (:gatepass_id,:from_status,:to_status,:transition_code,:actor,:reason,:metadata)');
+            $history->execute([':gatepass_id'=>$gatepassId,':from_status'=>$expectedCurrentStatusId,':to_status'=>$checkedInStatusId,':transition_code'=>'CHECKIN',':actor'=>$userId,':reason'=>null,':metadata'=>json_encode(['actual_in'=>$timestamp],JSON_UNESCAPED_SLASHES)]);
+            $this->db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if($this->db->inTransaction()){$this->db->rollBack();}
+            throw $e;
+        }
+    }
+
+    public function checkOut(int $gatepassId,int $userId,string $timestamp,int $checkedOutStatusId,int $expectedCurrentStatusId):bool
+    {
+        $this->db->beginTransaction();
+        try {
+            $current = $this->db->prepare('SELECT s.code FROM gatepasses g INNER JOIN gatepass_statuses s ON s.id=g.status_id WHERE g.id=:id AND g.deleted_at IS NULL FOR UPDATE');
+            $current->execute([':id'=>$gatepassId]);
+            $fromStatus = $current->fetchColumn();
+            if ($fromStatus === false) {
+                throw new InvalidArgumentException('Gatepass not found.');
+            }
+
+            $toStatus = $this->statusCodeById($checkedOutStatusId);
+            if (strcasecmp((string)$fromStatus, $this->statusCodeById($expectedCurrentStatusId)) !== 0) {
+                throw new RuntimeException('Gatepass state changed concurrently.');
+            }
+            GatepassTransitionGuard::assert((string)$fromStatus, $toStatus, 'CHECKOUT');
+
+            $stmt=$this->db->prepare('UPDATE gatepasses SET actual_out=:timestamp,checked_out_by=:user_id,status_id=:status_id WHERE id=:id AND actual_out IS NULL AND status_id=:expected_status AND deleted_at IS NULL');
+            $stmt->execute([':timestamp'=>$timestamp,':user_id'=>$userId,':status_id'=>$checkedOutStatusId,':id'=>$gatepassId,':expected_status'=>$expectedCurrentStatusId]);
+            if($stmt->rowCount()!==1){throw new RuntimeException('Checkout failed. Gatepass may have been modified concurrently.');}
+
+            $history=$this->db->prepare('INSERT INTO gatepass_state_history (gatepass_id,from_status_id,to_status_id,transition_code,actor_user_id,reason,metadata_json) VALUES (:gatepass_id,:from_status,:to_status,:transition_code,:actor,:reason,:metadata)');
+            $history->execute([':gatepass_id'=>$gatepassId,':from_status'=>$expectedCurrentStatusId,':to_status'=>$checkedOutStatusId,':transition_code'=>'CHECKOUT',':actor'=>$userId,':reason'=>null,':metadata'=>json_encode(['actual_out'=>$timestamp],JSON_UNESCAPED_SLASHES)]);
+            $this->db->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if($this->db->inTransaction()){$this->db->rollBack();}
+            throw $e;
+        }
+    }
+
+    private function statusCodeById(int $statusId): string
+    {
+        $stmt=$this->db->prepare('SELECT code FROM gatepass_statuses WHERE id=:id LIMIT 1');
+        $stmt->execute([':id'=>$statusId]);
+        $code=$stmt->fetchColumn();
+        if($code===false){throw new InvalidArgumentException('Unknown gatepass status.');}
+        return strtoupper((string)$code);
+    }
+
     public function findById(int $id):?array{$stmt=$this->db->prepare("SELECT g.id,g.gatepass_number,g.visit_id,g.gatepass_type_id,g.status_id,g.department_id,g.checked_in_by,g.checked_out_by,g.actual_in,g.actual_out,g.created_by,g.created_at,g.purpose,g.is_returnable,g.expected_return_date,g.actual_return_date,g.is_fully_returned,g.needs_approval,g.qr_token_hash,g.qr_expires_at,g.qr_issued_at,g.qr_revoked_at,g.qr_code_path,s.name status_name,s.code status_code,gt.name gatepass_type_name,gt.type_code,gt.allowed_actions,gt.direction,u.first_name created_by_first_name,u.last_name created_by_last_name FROM gatepasses g INNER JOIN gatepass_statuses s ON s.id=g.status_id INNER JOIN gatepass_types gt ON gt.id=g.gatepass_type_id LEFT JOIN users u ON u.id=g.created_by WHERE g.id=:id AND g.deleted_at IS NULL LIMIT 1");$stmt->execute([':id'=>$id]);$row=$stmt->fetch(PDO::FETCH_ASSOC);if(!$row)return null;$row['status_code']=strtoupper($row['status_code']??'');$row['type_code']=strtoupper($row['type_code']??'');return $row;}
     public function findByNumber(string $number):?array{$stmt=$this->db->prepare("SELECT g.*,s.name status_name,s.code status_code,gt.name gatepass_type_name,gt.type_code,gt.allowed_actions,gt.direction,u.first_name,u.last_name FROM gatepasses g INNER JOIN gatepass_statuses s ON s.id=g.status_id INNER JOIN gatepass_types gt ON gt.id=g.gatepass_type_id LEFT JOIN users u ON u.id=g.created_by WHERE g.gatepass_number=:number AND g.deleted_at IS NULL LIMIT 1");$stmt->execute([':number'=>$number]);$row=$stmt->fetch(PDO::FETCH_ASSOC);if(!$row)return null;$row['status_code']=strtoupper($row['status_code']??'');$row['type_code']=strtoupper($row['type_code']??'');return $row;}
     public function find(int $id):?array{return $this->findById($id);}
