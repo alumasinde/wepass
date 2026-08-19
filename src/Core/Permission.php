@@ -6,12 +6,17 @@ namespace App\Core;
 
 final class Permission
 {
-    public function __construct(private readonly ?int $userId = null) {}
+    /**
+     * The optional dependency is retained for backwards compatibility with
+     * existing controllers that construct Permission with a DB connection.
+     * Permission queries always use the tenant-aware DB facade.
+     */
+    public function __construct(private readonly mixed $connection = null) {}
 
     public function can(string $permission, ?int $userId = null, ?int $tenantId = null): bool
     {
-        $userId ??= $this->userId;
-        if ($userId === null) {
+        $userId ??= isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : null;
+        if ($userId === null || $userId <= 0) {
             return false;
         }
 
