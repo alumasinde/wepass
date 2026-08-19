@@ -5,44 +5,44 @@
 ; ============================================================
 
 [app]
-name    = "GatePass Management System"
-env     = local
-debug   = false
-url     = "http://localhost"
+name = "GatePass Management System"
+env = local
+debug = false
+url = "http://localhost"
 timezone = "Africa/Nairobi"
 
 [mysql]
-host     = 127.0.0.1
-port     = 3306
+host = 127.0.0.1
+port = 3306
 username = ""
 password = ""
 
 [database]
-host     = 127.0.0.1
-port     = 3306
-name     = glee_tenant_default
+host = 127.0.0.1
+port = 3306
+name = glee_tenant_default
 username = ""
 password = ""
-charset  = utf8mb4
+charset = utf8mb4
 persistent = false
 
 [directadmin]
-host             = ""
-port             = 2222
-username         = ""
-login_key        = ""
-verify_ssl       = true
-runtime_db_user  = ""
+host = ""
+port = 2222
+username = ""
+login_key = ""
+verify_ssl = true
+runtime_db_user = ""
 
 [master_db]
-host     = 127.0.0.1
-port     = 3306
-name     = glee_master
+host = 127.0.0.1
+port = 3306
+name = glee_master
 username = ""
 password = ""
 
 [platform]
-base_domain     = ""
+base_domain = ""
 admin_subdomain = "manage"
 
 [tenant]
@@ -52,14 +52,14 @@ plan = "starter"
 logo = "/assets/images/default-logoo.png"
 
 [gatepass]
-prefix   = "GP"
+prefix = "GP"
 zero_pad = 5
 
 [session]
-name     = glee_session
+name = glee_session
 lifetime = 7200
 httponly = true
-secure   = false
+secure = false
 samesite = Strict
 
 [security]
@@ -74,6 +74,8 @@ approval_lockout_seconds = 60
 admin_mutation_max_attempts = 60
 admin_mutation_lockout_seconds = 60
 bcrypt_rounds = 12
+; Lifetime of opaque QR credentials. 1 day by default; valid range is 60..2592000 seconds.
+qr_ttl_seconds = 86400
 trusted_proxies = ""
 
 [features]
@@ -96,9 +98,6 @@ from_name = "Glee GPMS"
 ; QR images are cached locally; the generator is not required during scanning.
 service_url = "http://127.0.0.1:8081"
 timeout_seconds = 5
-; Lifetime of the opaque credential embedded in each QR code.
-; Keep this finite so leaked screenshots/printouts eventually expire.
-credential_ttl_seconds = 86400
 
 [audit]
 retention_days = 365
