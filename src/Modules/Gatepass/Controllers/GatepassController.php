@@ -14,18 +14,6 @@ use App\Modules\Gatepass\Repositories\GatepassTypeRepository;
 use App\Modules\Gatepass\Repositories\GatepassStatusRepository;
 use App\Modules\Gatepass\DTOs\GatepassDTO;
 
-/**
- * Rebuilt from scratch — this file had been accidentally overwritten
- * with GatepassTypeController's entire contents (wrong namespace,
- * wrong class, none of the methods below existed), which is exactly
- * why the whole Gatepass module stopped loading. Reconstructed
- * against routes/web.php's method list, GatepassService/GatepassPolicy's
- * real signatures, and what each view under Views/ actually expects,
- * matching every fix already established this session (Request as
- * the first parameter on every handler — Router always calls
- * $controller->method($request, ...$routeParams) — and object-level
- * policy checks on show/edit/update/delete).
- */
 class GatepassController
 {
     private GatepassService $service;
@@ -36,7 +24,7 @@ class GatepassController
     public function __construct()
     {
         $this->service    = new GatepassService();
-        $this->policy     = new GatepassPolicy(new Permission(DB::connect()));
+        $this->policy     = new GatepassPolicy(new Permission(Auth::userId()));
         $this->typeRepo   = new GatepassTypeRepository();
         $this->statusRepo = new GatepassStatusRepository();
     }
@@ -58,13 +46,10 @@ class GatepassController
         return $gatepass;
     }
 
-    // ───────────────── INDEX ─────────────────
-
     public function index(Request $request): void
     {
         $user       = $this->user();
         $canViewAll = $this->policy->canViewAll();
-
         $gatepasses = $this->service->list((int) $user['id'], $canViewAll);
 
         foreach ($gatepasses as &$g) {
@@ -79,12 +64,9 @@ class GatepassController
         ], 'app');
     }
 
-    // ───────────────── CREATE ─────────────────
-
     public function create(Request $request): void
     {
         $user = $this->user();
-
         View::render('Gatepass::create', [
             'title'  => 'Create Gatepass',
             'types'  => $this->typeRepo->findAll(),
@@ -92,20 +74,18 @@ class GatepassController
             'user'   => $user,
             'error'  => $_SESSION['flash']['message'] ?? null,
         ], 'app');
-
         unset($_SESSION['flash']);
     }
-
-    // ───────────────── STORE ─────────────────
 
     public function store(Request $request): void
     {
         $user = $this->user();
-
         try {
+            if (!$this->policy->create()) {
+                Response::abort(403, "You don't have permission to create gatepasses.");
+            }
             $dto = GatepassDTO::fromRequest($request->all(), (int) $user['id']);
             $id  = $this->service->create($dto);
-
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Gatepass created successfully.'];
             header("Location: /gatepasses/{$id}");
             exit;
@@ -116,17 +96,13 @@ class GatepassController
         }
     }
 
-    // ───────────────── SHOW ─────────────────
-
     public function show(Request $request, int $id): void
     {
         $user     = $this->user();
         $gatepass = $this->findOrFail($id);
-
         if (!$this->policy->view($user, $gatepass)) {
             Response::abort(403, "You don't have permission to view this gatepass.");
         }
-
         View::render('Gatepass::show', [
             'title'    => 'Gatepass ' . ($gatepass['gatepass_number'] ?? ''),
             'gatepass' => $gatepass,
@@ -135,17 +111,13 @@ class GatepassController
         ], 'app');
     }
 
-    // ───────────────── EDIT ─────────────────
-
     public function edit(Request $request, int $id): void
     {
         $user     = $this->user();
         $gatepass = $this->findOrFail($id);
-
         if (!$this->policy->update($user, $gatepass)) {
             Response::abort(403, "This gatepass can't be edited.");
         }
-
         View::render('Gatepass::edit', [
             'title'    => 'Edit Gatepass',
             'gatepass' => $gatepass,
@@ -155,25 +127,19 @@ class GatepassController
             'visits'   => $this->service->getVisitsForUser($user['department_id'] ?? null),
             'error'    => $_SESSION['flash']['message'] ?? null,
         ], 'app');
-
         unset($_SESSION['flash']);
     }
-
-    // ───────────────── UPDATE ─────────────────
 
     public function update(Request $request, int $id): void
     {
         $user     = $this->user();
         $gatepass = $this->findOrFail($id);
-
         if (!$this->policy->update($user, $gatepass)) {
             Response::abort(403, "This gatepass can't be edited.");
         }
-
         try {
             $dto = GatepassDTO::fromRequest($request->all(), (int) $user['id']);
             $this->service->update($id, $dto);
-
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Gatepass updated.'];
             header("Location: /gatepasses/{$id}");
             exit;
@@ -184,38 +150,38 @@ class GatepassController
         }
     }
 
-    // ───────────────── DELETE ─────────────────
-
     public function delete(Request $request, int $id): void
     {
         $user     = $this->user();
         $gatepass = $this->findOrFail($id);
-
         if (!$this->policy->delete($user, $gatepass)) {
-            Response::abort(403, "This gatepass can't be deleted — either it's not yours, it's no longer pending, or it's already been checked in.");
+            Response::abort(403, "This gatepass can't be deleted.");
         }
-
         try {
             $this->service->delete($id);
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Gatepass deleted.'];
         } catch (\Throwable $e) {
             $_SESSION['flash'] = ['type' => 'danger', 'message' => $e->getMessage()];
         }
-
         header('Location: /gatepasses');
         exit;
     }
-
-    // ───────────────── CHECK IN ─────────────────
 
     public function checkIn(Request $request, mixed $id): never
     {
         $id   = (int) $id;
         $user = $this->user();
+        $gatepass = $this->findOrFail($id);
+
+        if (!$this->policy->checkIn($user, $gatepass)) {
+            if ($request->wantsJson()) {
+                Response::json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+            Response::abort(403, "You don't have permission to check in this gatepass.");
+        }
 
         try {
-            $this->service->checkIn($id, $user['id']);
-
+            $this->service->checkIn($id, (int) $user['id']);
             if ($request->wantsJson()) {
                 $gatepass = $this->service->find($id);
                 $actions  = $this->service->getAvailableActions($gatepass);
@@ -224,11 +190,10 @@ class GatepassController
                     'message'      => 'Checked in successfully.',
                     'status_name'  => $gatepass['status_name'] ?? null,
                     'status_code'  => strtolower($gatepass['status_code'] ?? ''),
-                    'can_checkin'  => (bool) ($actions['can_checkin']  ?? false),
+                    'can_checkin'  => (bool) ($actions['can_checkin'] ?? false),
                     'can_checkout' => (bool) ($actions['can_checkout'] ?? false),
                 ]);
             }
-
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Checked in successfully.'];
         } catch (\Throwable $e) {
             if ($request->wantsJson()) {
@@ -236,21 +201,25 @@ class GatepassController
             }
             $_SESSION['flash'] = ['type' => 'danger', 'message' => $e->getMessage()];
         }
-
         header("Location: /gatepasses/{$id}");
         exit;
     }
-
-    // ───────────────── CHECK OUT ─────────────────
 
     public function checkOut(Request $request, mixed $id): never
     {
         $id   = (int) $id;
         $user = $this->user();
+        $gatepass = $this->findOrFail($id);
+
+        if (!$this->policy->checkOut($user, $gatepass)) {
+            if ($request->wantsJson()) {
+                Response::json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+            Response::abort(403, "You don't have permission to check out this gatepass.");
+        }
 
         try {
-            $this->service->checkOut($id, $user['id']);
-
+            $this->service->checkOut($id, (int) $user['id']);
             if ($request->wantsJson()) {
                 $gatepass = $this->service->find($id);
                 $actions  = $this->service->getAvailableActions($gatepass);
@@ -259,11 +228,10 @@ class GatepassController
                     'message'      => 'Checked out successfully.',
                     'status_name'  => $gatepass['status_name'] ?? null,
                     'status_code'  => strtolower($gatepass['status_code'] ?? ''),
-                    'can_checkin'  => (bool) ($actions['can_checkin']  ?? false),
+                    'can_checkin'  => (bool) ($actions['can_checkin'] ?? false),
                     'can_checkout' => (bool) ($actions['can_checkout'] ?? false),
                 ]);
             }
-
             $_SESSION['flash'] = ['type' => 'success', 'message' => 'Checked out successfully.'];
         } catch (\Throwable $e) {
             if ($request->wantsJson()) {
@@ -271,7 +239,6 @@ class GatepassController
             }
             $_SESSION['flash'] = ['type' => 'danger', 'message' => $e->getMessage()];
         }
-
         header("Location: /gatepasses/{$id}");
         exit;
     }
