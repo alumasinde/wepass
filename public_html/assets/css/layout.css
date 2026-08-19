@@ -1,0 +1,294 @@
+/* ════════════════════════════════════════════════════════════
+   LAYOUT.CSS  —  App shell, sidebar, navbar, footer
+   ════════════════════════════════════════════════════════════ */
+
+
+/* ── App shell ──────────────────────────────────────────────── */
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: margin-left var(--tx-slow), width var(--tx-slow);
+}
+
+.content-wrapper {
+    flex: 1;
+    padding: var(--space-6);
+    max-width: 1440px;
+}
+
+
+/* ── Sidebar ────────────────────────────────────────────────── */
+
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--color-sidebar-bg);
+    color: var(--color-sidebar-text);
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: width var(--tx-slow);
+    z-index: 100;
+    overflow: hidden;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    white-space: nowrap;
+    min-height: var(--navbar-height);
+}
+
+.brand i {
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.menu {
+    list-style: none;
+    padding: var(--space-3) 0;
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+.menu::-webkit-scrollbar { display: none; }
+
+.menu a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 11px var(--space-5);
+    color: var(--color-sidebar-text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    position: relative;
+    transition: background var(--tx), color var(--tx);
+}
+
+.menu a i {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    opacity: 0.75;
+    transition: opacity var(--tx);
+}
+
+.menu a:hover {
+    background: var(--color-sidebar-hover);
+    color: #fff;
+}
+.menu a:hover i { opacity: 1; }
+
+.menu a.active {
+    background: var(--color-sidebar-active);
+    color: #fff;
+    font-weight: 600;
+}
+.menu a.active i { opacity: 1; }
+.menu a.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #fff;
+    border-radius: 0 2px 2px 0;
+}
+
+
+/* ── Sidebar: collapsed state ───────────────────────────────── */
+
+body.sidebar-collapsed .sidebar            { width: var(--sidebar-collapsed); }
+body.sidebar-collapsed .main-content       { margin-left: var(--sidebar-collapsed); width: calc(100% - var(--sidebar-collapsed)); }
+body.sidebar-collapsed .brand span,
+body.sidebar-collapsed .menu a span        { display: none; }
+body.sidebar-collapsed .menu a             { justify-content: center; padding: 13px 0; }
+body.sidebar-collapsed .menu a i           { width: auto; margin: 0; }
+body.sidebar-collapsed .brand              { justify-content: center; padding: 0; }
+
+
+/* ── Mobile drawer backdrop ─────────────────────────────────── */
+/* Hidden by default on all screen sizes; JS only ever adds .show
+   while the sidebar is open in off-canvas (<=992px) mode, so this
+   never appears on desktop regardless of screen size. */
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 99; /* below .sidebar (100), above page content */
+    opacity: 0;
+    transition: opacity var(--tx-slow);
+}
+.sidebar-backdrop.show {
+    display: block;
+    opacity: 1;
+}
+
+/* Prevent the page behind the drawer from scrolling while it's open */
+body.sidebar-open-lock {
+    overflow: hidden;
+}
+
+
+/* ── Navbar ─────────────────────────────────────────────────── */
+
+.navbar {
+    height: var(--navbar-height);
+    background: var(--color-header-bg);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 var(--space-6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    transition: background var(--tx), color var(--tx);
+}
+.toggle-btn:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+}
+
+.page-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-center {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-shrink: 0;
+}
+.nav-right form { margin: 0; }
+
+.user-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    transition: background var(--tx), color var(--tx);
+}
+.user-name:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--color-danger);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    transition: background var(--tx);
+}
+.logout-btn:hover { background: var(--color-danger-bg); }
+
+
+/* ── Footer ─────────────────────────────────────────────────── */
+
+.footer {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-4) var(--space-6);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--color-text-subtle);
+}
+
+
+/* ── Page header ────────────────────────────────────────────── */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.page-heading {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--color-text);
+}
+
+.page-heading i {
+    color: var(--color-primary);
+    font-size: 1.1rem;
+}
+
+.page-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}

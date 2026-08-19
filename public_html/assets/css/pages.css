@@ -1,0 +1,529 @@
+/* ════════════════════════════════════════════════════════════
+   PAGES.CSS  —  Page-specific styles
+   Sections: Dashboard · Gatepass Create (gp-) · Gatepass Show (gs-) · Approvals
+   ════════════════════════════════════════════════════════════ */
+
+
+/* ── Dashboard ──────────────────────────────────────────────── */
+
+.dashboard-container { max-width: 1400px; }
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-5);
+    margin-bottom: var(--space-8);
+}
+
+.dashboard-grid .card {
+    padding: var(--space-5) var(--space-6);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 110px;
+    transition: transform var(--tx), box-shadow var(--tx);
+}
+.dashboard-grid .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.dashboard-grid .card h3 {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-3);
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-text);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+}
+
+/* Charts */
+.chart-filters {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--space-5);
+}
+.chart-filters select { width: auto; padding: 7px 30px 7px 12px; }
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: var(--space-6);
+}
+
+.chart-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xs);
+}
+
+.chart-card h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+}
+
+.chart-container {
+    position: relative;
+    height: 280px;
+    width: 100%;
+}
+
+/* Collapsible dashboard sections (role-based groupings) */
+.gp-dash-section {
+    margin-bottom: var(--space-8);
+}
+
+.gp-dash-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.gp-dash-section__header h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text);
+}
+
+.gp-dash-section__header h2 i {
+    color: var(--color-primary);
+    font-size: 0.95rem;
+}
+
+/* Shared collapse toggle button — used by both dashboard sections
+   and individual chart cards */
+.gp-dash-toggle {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    transition: background var(--tx), color var(--tx);
+}
+.gp-dash-toggle:hover {
+    background: var(--color-surface-subtle);
+    color: var(--color-text);
+}
+
+/* Individual collapsible chart card — same visual language as
+   .chart-card, just with its own header/toggle instead of a plain h3 */
+.gp-chart-card {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+}
+
+.gp-chart-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.gp-chart-card__header h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.gp-chart-card__body {
+    padding: var(--space-5);
+}
+
+
+/* ── Gatepass Create form  (gp-) ────────────────────────────── */
+
+.gp-card {
+    background: var(--color-surface);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    max-width: 900px;
+}
+
+/* gp-alert reuses alert token patterns — no hardcoding */
+.gp-alert {
+    padding: 10px var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    margin-bottom: var(--space-4);
+    border: 1px solid transparent;
+    border-left: 4px solid var(--color-danger);
+    background: var(--color-danger-bg);
+    color: var(--color-danger-text);
+}
+
+.gp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: var(--space-4);
+}
+.gp-field--grow-1  { flex: 1; }
+.gp-field--grow-2  { flex: 2; }
+.gp-field--shrink  { flex: 0 0 80px; }
+
+.gp-label    { font-size: 0.8125rem; font-weight: 600; color: var(--color-text-secondary); }
+.gp-required { color: var(--color-danger); margin-left: 1px; }
+.gp-hint     { font-weight: 400; color: var(--color-text-subtle); font-size: 0.775rem; }
+
+/* gp inputs share the base form-control styles; only overrides here */
+.gp-input,
+.gp-select,
+.gp-textarea { padding: 8px 12px; font-size: 0.875rem; }
+
+.gp-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+}
+.gp-textarea { min-height: 88px; }
+
+/* gp checkboxes */
+.gp-options {
+    display: flex;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+}
+
+.gp-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    user-select: none;
+}
+.gp-checkbox input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.gp-checkbox__box {
+    width: 17px;
+    height: 17px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: var(--tx);
+}
+.gp-checkbox input:checked + .gp-checkbox__box {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+.gp-checkbox input:checked + .gp-checkbox__box::after {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 9px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translateY(-1px);
+}
+.gp-checkbox input:focus + .gp-checkbox__box {
+    box-shadow: 0 0 0 3px var(--color-primary-ring);
+}
+.gp-checkbox__label { font-size: 0.875rem; color: var(--color-text-secondary); }
+
+.gp-divider { border: none; border-top: 1px solid var(--color-border); margin: var(--space-5) 0; }
+
+.gp-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+.gp-section-title { font-size: 0.9375rem; font-weight: 700; color: var(--color-text); letter-spacing: -0.01em; margin: 0; }
+
+.gp-item {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-subtle);
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+    transition: box-shadow var(--tx);
+}
+.gp-item:hover { box-shadow: var(--shadow-sm); }
+
+.gp-item__fields {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+.gp-item__fields .gp-field { margin-bottom: 0; min-width: 80px; }
+
+.gp-item__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+
+.gp-row     { display: flex; gap: 12px; flex-wrap: wrap; }
+.gp-actions { display: flex; gap: var(--space-3); align-items: center; }
+
+/* gp-btn: thin wrapper that extends .btn — modifier classes only */
+.gp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 8px var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--font-base);
+    line-height: 1.4;
+    transition: background var(--tx), box-shadow var(--tx);
+}
+.gp-btn--sm      { padding: 5px 10px; font-size: 0.8rem; }
+.gp-btn--primary { background: var(--color-primary); color: #fff; }
+.gp-btn--primary:hover { background: var(--color-primary-dark); }
+.gp-btn--secondary { background: var(--color-text-muted); color: #fff; }
+.gp-btn--secondary:hover { background: var(--color-text-secondary); }
+.gp-btn--outline { background: transparent; border-color: var(--color-primary); color: var(--color-primary); }
+.gp-btn--outline:hover { background: var(--color-primary-light); }
+.gp-btn--danger  { background: var(--color-danger); color: #fff; }
+.gp-btn--danger:hover { background: var(--color-danger-dark); }
+
+
+/* ── Gatepass Show  (gs-) ───────────────────────────────────── */
+
+.gs-page   { max-width: 1060px; margin: 0 auto; padding: 0 0 3rem; }
+.gs-layout { display: grid; grid-template-columns: 1fr 300px; gap: var(--space-5); align-items: start; margin-top: var(--space-5); }
+
+/* Breadcrumb */
+.gs-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-3);
+}
+.gs-breadcrumb__link       { color: var(--color-primary); }
+.gs-breadcrumb__link:hover { text-decoration: underline; }
+
+/* gs-card */
+.gs-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5) 1.375rem;
+    margin-bottom: var(--space-4);
+}
+.gs-card--header     { padding-bottom: var(--space-4); }
+.gs-card--actions    { border-color: var(--color-primary); }
+.gs-card--no-actions { border-style: dashed; }
+
+.gs-card__row--spread {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.gs-ref           { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-subtle); margin-bottom: 4px; }
+.gs-card__title   { font-size: 1.25rem; font-weight: 700; color: var(--color-text); margin: 0 0 2px; letter-spacing: -0.02em; }
+.gs-card__sub     { font-size: 0.875rem; color: var(--color-text-muted); margin: 0; }
+.gs-card__section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-text-subtle); margin: 0 0 var(--space-4); }
+
+/* Status pills */
+.gs-status           { padding: 4px 10px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; }
+.gs-status--pending  { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.gs-status--approved { background: var(--color-success-bg); color: var(--color-success-text); }
+.gs-status--rejected { background: var(--color-danger-bg);  color: var(--color-danger-text); }
+.gs-status--in       { background: var(--color-info-bg);    color: var(--color-info-text); }
+.gs-status--out      { background: var(--color-accent-bg);  color: var(--color-accent-text); }
+.gs-status--neutral  { background: var(--color-surface-subtle); color: var(--color-text-secondary); }
+
+/* Pills row */
+.gs-pill-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.gs-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 550;
+    background: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+.gs-pill--blue { background: var(--color-primary-light); color: var(--color-primary-dark); border-color: rgba(37,99,235,0.2); }
+
+/* Field grid */
+.gs-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+
+.gs-field__label      { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-subtle); margin-bottom: 3px; }
+.gs-field__value      { font-size: 0.875rem; color: var(--color-text); }
+.gs-field__value--muted { color: var(--color-text-muted); font-style: italic; }
+.gs-field__value--done  { color: var(--color-success-text); font-weight: 600; }
+
+.gs-notes { margin: 0; font-size: 0.875rem; color: var(--color-text-secondary); line-height: 1.6; white-space: pre-wrap; }
+
+/* Timeline */
+.gs-timeline           { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+.gs-timeline__item     { display: flex; gap: var(--space-3); padding-bottom: var(--space-5); position: relative; }
+.gs-timeline__item:last-child { padding-bottom: 0; }
+.gs-timeline__item::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 20px;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-border);
+}
+.gs-timeline__item:last-child::before { display: none; }
+
+.gs-timeline__dot          { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; border: 2px solid; }
+.gs-timeline__dot--approved { background: var(--color-success-bg); border-color: var(--color-success); }
+.gs-timeline__dot--rejected  { background: var(--color-danger-bg);  border-color: var(--color-danger); }
+.gs-timeline__dot--pending   { background: var(--color-warning-bg); border-color: var(--color-warning); }
+
+.gs-timeline__body  { flex: 1; min-width: 0; }
+.gs-timeline__top   { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.gs-timeline__top strong { font-size: 0.875rem; font-weight: 600; }
+
+.gs-timeline__decision           { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-pill); }
+.gs-timeline__decision--approved { background: var(--color-success-bg); color: var(--color-success-text); }
+.gs-timeline__decision--rejected  { background: var(--color-danger-bg);  color: var(--color-danger-text); }
+.gs-timeline__decision--pending   { background: var(--color-warning-bg); color: var(--color-warning-text); }
+
+.gs-timeline__time    { display: block; font-size: 0.75rem; color: var(--color-text-subtle); margin-top: 2px; }
+.gs-timeline__remarks { font-size: 0.8125rem; color: var(--color-text-secondary); margin: 4px 0 0; }
+
+/* Sidebar action buttons */
+.gs-actions__hint { font-size: 0.75rem; color: var(--color-text-muted); margin: -4px 0 var(--space-4); line-height: 1.5; }
+.gs-action-group  { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.gs-action-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: 13px var(--space-4);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-base);
+    transition: opacity var(--tx), transform 0.1s;
+}
+.gs-action-btn:hover  { opacity: 0.88; }
+.gs-action-btn:active { transform: scale(0.98); }
+.gs-action-btn--checkin  { background: var(--color-primary); color: #fff; }
+.gs-action-btn--checkout { background: var(--color-accent);  color: #fff; }
+
+.gs-no-actions        { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2); padding: var(--space-2) 0; color: var(--color-text-subtle); }
+.gs-no-actions__title  { font-size: 0.875rem; font-weight: 600; color: var(--color-text-secondary); margin: 0; }
+.gs-no-actions__reason { font-size: 0.8125rem; color: var(--color-text-muted); margin: 0; line-height: 1.5; }
+
+/* Meta list */
+.gs-meta         { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.gs-meta__row    { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); font-size: 0.8125rem; }
+.gs-meta__row dt { color: var(--color-text-muted); flex-shrink: 0; }
+.gs-meta__row dd { margin: 0; color: var(--color-text); text-align: right; }
+
+/* Confirm modal */
+.gs-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: var(--space-4);
+}
+.gs-overlay[hidden] { display: none; }
+
+.gs-modal {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 360px;
+    padding: var(--space-8) var(--space-6) var(--space-6);
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.18s ease;
+}
+.gs-modal__icon  { font-size: 2rem; margin-bottom: var(--space-3); }
+.gs-modal__title { font-size: 1.0625rem; font-weight: 700; margin: 0 0 var(--space-2); }
+.gs-modal__body  { font-size: 0.875rem; color: var(--color-text-muted); margin: 0 0 var(--space-6); line-height: 1.5; }
+.gs-modal__footer { display: flex; justify-content: center; gap: var(--space-2); }
+
+@keyframes modalIn {
+    from { transform: translateY(10px) scale(0.97); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+}
+
+/* gt-btn (gatepass-types inline buttons) */
+.gt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 8px var(--space-4);
+    border-radius: var(--radius-sm);
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 550;
+    cursor: pointer;
+    font-family: var(--font-base);
+    transition: background var(--tx), opacity var(--tx);
+}
+.gt-btn--ghost    { background: transparent; color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+.gt-btn--ghost:hover { background: var(--color-surface-subtle); }
+.gt-btn--checkin  { background: var(--color-primary); color: #fff; }
+.gt-btn--checkout { background: var(--color-accent);  color: #fff; }
+.gt-btn:disabled  { opacity: 0.5; cursor: not-allowed; }
+
+
+/* ── Approval pages ─────────────────────────────────────────── */
+
+.approval-card   { max-width: 920px; margin: 0 auto; }
+.approval-header {
+    padding: var(--space-5) var(--space-6);
+    background: var(--color-surface-subtle);
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.approval-body { padding: var(--space-6); }

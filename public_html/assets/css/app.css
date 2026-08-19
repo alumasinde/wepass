@@ -1,0 +1,34 @@
+/* ════════════════════════════════════════════════════════════
+   APP.CSS  —  Main entry point (authenticated layout)
+   Import order matters: tokens → base → layout → components → pages → utilities
+   ════════════════════════════════════════════════════════════ */
+
+/* 1. Design tokens (variables only — no output CSS) */
+@import "token.css";
+
+/* 2. Global reset & element styles */
+@import "base.css";
+
+/* 3. App shell: sidebar, navbar, footer, page-header */
+@import "layout.css";
+
+/* 4. Reusable components: buttons, cards, tables, forms, toggle */
+@import "components.css";
+
+/* 5. Badges & bg-* semantic helpers */
+@import "badges.css";
+
+/* 6. Alert banners */
+@import "alerts.css";
+
+/* 7. Page-specific: dashboard, gatepass create/show, approvals */
+@import "pages.css";
+
+/* 8. Report cards & tables */
+@import "reports.css";
+
+/* 9. Error pages */
+@import "errors.css";
+
+/* 10. Utilities, responsive, pagination — always last */
+@import "utilities.css";

@@ -1,0 +1,105 @@
+/* ════════════════════════════════════════════════════════════
+   TOKEN.CSS  —  Design tokens (single source of truth)
+   All other files must reference only these variables.
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Brand ──────────────────────────────────────────────── */
+    --color-primary:        #2563eb !important;
+    --color-primary-dark:   #1d4ed8 !important;
+    --color-primary-light:  #eff6ff !important;
+    --color-primary-ring:   rgba(37, 99, 235, 0.18) !important;
+    --color-primary-hover:  #04113a !important; /* 10% darker than primary */ 
+
+    /* ── Semantic: success ──────────────────────────────────── */
+    --color-success:        #10b981 !important;
+    --color-success-dark:   #059669 !important;
+    --color-success-bg:     #ecfdf5 !important;
+    --color-success-text:   #065f46 !important;
+
+    /* ── Semantic: danger ───────────────────────────────────── */
+    --color-danger:         #ef4444 !important;
+    --color-danger-dark:    #dc2626 !important;
+    --color-danger-bg:      #fef2f2 !important;
+    --color-danger-text:    #991b1b !important;
+
+    /* ── Semantic: warning ──────────────────────────────────── */
+    --color-warning:        #f59e0b !important;
+    --color-warning-dark:   #d97706 !important;
+    --color-warning-bg:     #fffbeb !important;
+    --color-warning-text:   #92400e !important;
+
+    /* ── Semantic: info ─────────────────────────────────────── */
+    --color-info:           #3b82f6 !important;
+    --color-info-dark:      #2563eb !important;
+    --color-info-bg:        #eff6ff !important;
+    --color-info-text:      #1e40af !important;
+
+    /* ── Neutrals: text ─────────────────────────────────────── */
+    --color-text:           #111827 !important;
+    --color-text-secondary: #374151 !important;
+    --color-text-muted:     #6b7280 !important;
+    --color-text-subtle:    #9ca3af !important;
+
+    /* ── Neutrals: surfaces ─────────────────────────────────── */
+    --color-surface:        #ffffff !important;
+    --color-surface-subtle: #f9fafb !important;
+    --color-bg:             #f1f5f9 !important;
+    --color-border:         #e5e7eb !important;
+    --color-border-focus:   var(--color-primary) !important;
+
+    /* ── Header / navbar ─────────────────────────────────────── */
+    /* Defaults to the surface color — override via
+       Settings → Theme (tenant_settings key 'header_bg') without
+       changing anything for tenants who haven't customized it. */
+    --color-header-bg:      var(--color-surface) !important;
+
+    /* ── Sidebar ────────────────────────────────────────────── */
+    --color-sidebar-bg:     #1e293b !important;
+    --color-sidebar-text:   #f1f5f9 !important;
+    --color-sidebar-muted:  rgba(241, 245, 249, 0.5) !important;
+    --color-sidebar-hover:  rgba(255, 255, 255, 0.07) !important;
+    --color-sidebar-active: var(--color-primary) !important;
+
+    /* ── Accent (gatepass purple) ───────────────────────────── */
+    --color-accent:         #7c3aed !important;
+    --color-accent-dark:    #6d28d9 !important;
+    --color-accent-bg:      #f3e8ff !important;
+    --color-accent-text:    #6b21a8 !important;
+
+    /* ── Typography ─────────────────────────────────────────── */
+    --font-base: "DM Sans", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+    /* ── Radii ──────────────────────────────────────────────── */
+    --radius-xs:   4px;
+    --radius-sm:   6px;
+    --radius:      8px;
+    --radius-md:   10px;
+    --radius-lg:   12px;
+    --radius-pill: 9999px;
+
+    /* ── Spacing (4-pt scale) ───────────────────────────────── */
+    --space-1:  4px;
+    --space-2:  8px;
+    --space-3:  12px;
+    --space-4:  16px;
+    --space-5:  20px;
+    --space-6:  24px;
+    --space-8:  32px;
+
+    /* ── Shadows ────────────────────────────────────────────── */
+    --shadow-xs: 0 1px 2px  rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 1px 4px  rgba(0, 0, 0, 0.07);
+    --shadow:    0 4px 12px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.10);
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    --sidebar-width:     200px;
+    --sidebar-collapsed: 68px;
+    --navbar-height:     60px;
+
+    /* ── Transitions ────────────────────────────────────────── */
+    --tx:      0.18s ease;
+    --tx-slow: 0.28s ease;
+}

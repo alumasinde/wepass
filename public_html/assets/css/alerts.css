@@ -1,0 +1,63 @@
+/* ════════════════════════════════════════════════════════════
+   ALERTS.CSS  —  Inline alert banners
+   ════════════════════════════════════════════════════════════ */
+
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: 12px var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    margin-bottom: var(--space-5);
+    border: 1px solid transparent;
+    border-left-width: 4px;
+    line-height: 1.5;
+}
+
+.alert-success {
+    background: var(--color-success-bg);
+    border-color: rgba(16, 185, 129, 0.3);
+    border-left-color: var(--color-success);
+    color: var(--color-success-text);
+}
+
+.alert-info {
+    background: var(--color-info-bg);
+    border-color: rgba(59, 130, 246, 0.3);
+    border-left-color: var(--color-info);
+    color: var(--color-info-text);
+}
+
+.alert-warning {
+    background: var(--color-warning-bg);
+    border-color: rgba(245, 158, 11, 0.3);
+    border-left-color: var(--color-warning);
+    color: var(--color-warning-text);
+}
+
+.alert-danger,
+.alert-error {
+    background: var(--color-danger-bg);
+    border-color: rgba(239, 68, 68, 0.3);
+    border-left-color: var(--color-danger);
+    color: var(--color-danger-text);
+}
+
+/* Auto-dismiss animation */
+.auto-dismiss {
+    animation: alertIn 0.2s ease;
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+}
+.auto-dismiss.hide {
+    opacity: 0;
+    max-height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+@keyframes alertIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

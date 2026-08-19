@@ -1,0 +1,143 @@
+/* ════════════════════════════════════════════════════════════
+   LOGIN.CSS  —  Standalone guest / auth layout
+   Loaded via guest.php — imports its own token layer.
+   ════════════════════════════════════════════════════════════ */
+
+@import "token.css";
+
+body {
+    margin: 0;
+    font-family: var(--font-base);
+    background: var(--color-bg);
+    color: var(--color-text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+.auth-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--space-6);
+}
+/* ── Wrapper & card ─────────────────────────────────────────── */
+
+.auth-wrapper {
+    width: 100%;
+    max-width: 450px;
+    padding: var(--space-4);
+}
+
+.auth-card {
+    background: var(--color-surface);
+    padding: var(--space-8) var(--space-6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--color-border);
+}
+
+.auth-title {
+    text-align: center;
+    margin-bottom: var(--space-5);
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+}
+
+/* ── Logo ───────────────────────────────────────────────────── */
+
+.logo-container  { text-align: center; margin-bottom: var(--space-5); }
+.tenant-logo     { display: block; margin: 2px auto var(--space-5); max-width: 120px; }
+
+/* ── Form groups ────────────────────────────────────────────── */
+
+.form-group {
+    margin-bottom: var(--space-4);
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    width: 100%;
+    margin-bottom: var(--space-1);
+    color: var(--color-text-secondary);
+}
+
+/* ── Input with icon ────────────────────────────────────────── */
+
+.input-icon           { position: relative; }
+.input-icon i {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    transform: translateY(-50%);
+    color: var(--color-text-subtle);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+.input-icon input {
+    width: 83%;
+    padding: 10px 12px 10px 34px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-family: var(--font-base);
+    color: var(--color-text);
+    background: var(--color-surface);
+    outline: none;
+    transition: border-color var(--tx), box-shadow var(--tx);
+}
+.input-icon input:focus {
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px var(--color-primary-ring);
+}
+
+/* ── Error alert ────────────────────────────────────────────── */
+
+.alert-error {
+    background: var(--color-danger-bg);
+    color: var(--color-danger-text);
+    padding: 10px var(--space-3);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-left: 4px solid var(--color-danger);
+    margin-bottom: var(--space-4);
+    font-size: 0.875rem;
+}
+
+.auth-button {
+    width: 100%;
+    padding: 12px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--tx);
+}
+.auth-button:hover { 
+    background: var(--color-primary-hover); 
+}
+
+.extra-links {
+    margin-top: var(--space-4);
+    text-align: center;
+}
+.extra-links a {
+    font-size: 0.875rem;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+.extra-links a:hover { text-decoration: underline; }
+
+@media (max-width: 480px) {
+    .auth-wrapper { padding: var(--space-2); }
+    .auth-card    { padding: var(--space-6) var(--space-4); }
+}

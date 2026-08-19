@@ -1,0 +1,63 @@
+/* ════════════════════════════════════════════════════════════
+   BADGES.CSS  —  Status badges & bg-* helpers
+   ════════════════════════════════════════════════════════════ */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    background: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+
+/* Semantic variants */
+.badge-success, .badge-approved, .bg-success {
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+.badge-warning, .badge-pending, .bg-warning {
+    background: var(--color-warning-bg);
+    color: var(--color-warning-text);
+    border-color: rgba(245, 158, 11, 0.25);
+}
+
+.badge-danger, .badge-rejected, .bg-danger {
+    background: var(--color-danger-bg);
+    color: var(--color-danger-text);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.badge-info, .bg-info {
+    background: var(--color-info-bg);
+    color: var(--color-info-text);
+    border-color: rgba(59, 130, 246, 0.25);
+}
+
+.bg-primary {
+    background: var(--color-primary-light);
+    color: var(--color-primary-dark);
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.badge-secondary, .badge-light, .bg-secondary {
+    background: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border);
+}
+
+.bg-dark {
+    background: var(--color-sidebar-bg);
+    color: #fff;
+    border-color: transparent;
+}
+
+/* Bootstrap compat: bg-info text-dark */
+.bg-info.text-dark { color: var(--color-text) !important; }

@@ -1,0 +1,225 @@
+/* ════════════════════════════════════════════════════════════
+   UTILITIES.CSS  —  Helpers · Responsive · Pagination
+   ════════════════════════════════════════════════════════════ */
+
+
+/* ── Permission / role views ────────────────────────────────── */
+
+.permission-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+}
+.permission-checkbox { width: 16px; height: 16px; cursor: pointer; }
+
+.module-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    margin: var(--space-5) 0 var(--space-2);
+}
+.module-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+
+/* ── Spacing helpers (Bootstrap compat) ─────────────────────── */
+
+.mb-0  { margin-bottom: 0 !important; }
+.mb-3  { margin-bottom: var(--space-4) !important; }
+.mb-4  { margin-bottom: var(--space-5) !important; }
+.mt-1  { margin-top: var(--space-1) !important; }
+.mt-2  { margin-top: var(--space-2) !important; }
+.mt-4  { margin-top: var(--space-5) !important; }
+.pb-2  { padding-bottom: var(--space-2) !important; }
+.gap-2 { gap: var(--space-2) !important; }
+.me-2  { margin-right: var(--space-2) !important; }
+
+
+/* ── Text helpers ───────────────────────────────────────────── */
+
+.text-center  { text-align: center; }
+.text-right,
+.text-end     { text-align: right; }
+.text-white   { color: #fff !important; }
+.text-dark    { color: var(--color-text) !important; }
+.text-danger  { color: var(--color-danger) !important; }
+.text-muted   { color: var(--color-text-muted) !important; }
+.fw-semibold  { font-weight: 600 !important; }
+
+
+/* ── Display helpers ────────────────────────────────────────── */
+
+.d-flex                  { display: flex; }
+.d-block                 { display: block; }
+.align-items-center      { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.flex-wrap               { flex-wrap: wrap; }
+
+/* Bootstrap grid compat */
+.row      { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.col-md-6 { flex: 1 1 calc(50% - var(--space-2)); min-width: 200px; }
+
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+
+.show        { display: block !important; }
+.fade        { opacity: 0; transition: opacity 0.15s; }
+.fade.show   { opacity: 1; }
+
+
+/* ── Pagination ─────────────────────────────────────────────── */
+
+.pagination {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: var(--space-5);
+    list-style: none;
+    padding: 0;
+}
+
+.pagination a,
+.pagination .page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    background: var(--color-surface);
+    transition: background var(--tx), border-color var(--tx), color var(--tx);
+}
+
+.pagination a:hover,
+.pagination .page-link:hover {
+    background: var(--color-surface-subtle);
+    border-color: #c9d0da;
+    color: var(--color-text);
+}
+
+.pagination .active a,
+.pagination .active .page-link,
+.pagination a.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+.pagination-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--space-4) 0 0;
+}
+
+.summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-3);
+}
+.summary-count { font-weight: 600; color: var(--color-text-secondary); }
+
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+/* Tablet: slide sidebar off-screen. This breakpoint (992px) MUST
+   match MOBILE_BREAKPOINT in resources/views/layouts/app.php's
+   sidebar-toggle script — they used to disagree (JS said 768, CSS
+   said 992), which left a dead zone between the two widths where
+   the sidebar was positioned off-screen by CSS but the toggle
+   button ran the "desktop collapse" branch instead of "open", so
+   there was no way to open it at all in that range. */
+@media (max-width: 992px) {
+    .sidebar {
+        left: calc(-1 * var(--sidebar-width));
+        transition: left var(--tx-slow), width var(--tx-slow);
+    }
+    .sidebar.open  { left: 0; }
+    .main-content  { margin-left: 0; width: 100%; }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .content-wrapper  { padding: var(--space-4); }
+    .page-header      { flex-direction: column; align-items: flex-start; }
+    .page-heading     { font-size: 1.2rem; }
+    .dashboard-grid   { gap: var(--space-4); }
+    .card-value       { font-size: 1.6rem; }
+    .charts-grid      { grid-template-columns: 1fr; }
+    .gs-layout        { grid-template-columns: 1fr; }
+    .gs-sidebar       { order: -1; }
+    .gs-grid-2        { grid-template-columns: 1fr; }
+    .row              { gap: var(--space-3); }
+    .col-md-6         { flex: 1 1 100%; }
+    .gp-card          { padding: var(--space-4); }
+    .table th,
+    .table td         { padding: 10px 12px; }
+
+    /* Tenant branding in the navbar center is decorative, not
+       information the user needs — drop it so the page title (which
+       IS contextual, useful info) has room to breathe instead of
+       three flex sections fighting over a narrow navbar. */
+    .nav-center { display: none; }
+    .navbar     { padding: 0 var(--space-4); }
+
+    /* The single highest-impact fix on this list: any input under
+       16px font-size makes iOS Safari zoom the whole page in when
+       it's focused. Every form in the app has this problem below
+       768px without this override. */
+    .form-control,
+    .form-select { font-size: 16px; }
+
+    /* .card-header is a flex row by default (see components.css) —
+       stack it once side-by-side title+actions gets tight, so
+       action buttons get their own full-width row instead of being
+       squeezed against the heading. */
+    .card-header    { flex-direction: column; align-items: flex-start; }
+    .header-actions { width: 100%; }
+
+    .card-body { padding: var(--space-4); }
+
+    /* Slightly taller tap targets — 38px (the desktop default) is a
+       bit under the ~40-44px comfortable minimum for a touchscreen. */
+    .btn { min-height: 40px; }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    .btn { font-size: 0.8rem; padding: 8px 12px; }
+
+    .content-wrapper { padding: var(--space-3); }
+    .navbar          { padding: 0 var(--space-3); }
+    .card-body       { padding: var(--space-3); }
+    .card-header     { padding: var(--space-3) var(--space-4); }
+
+    .table th,
+    .table td { padding: 8px 10px; font-size: 0.8rem; }
+
+    /* Full-width, stacked buttons are much easier to hit accurately
+       than a cramped side-by-side row at this width — applies to the
+       primary form submit/cancel row specifically, not every button
+       group (table action buttons stay compact and inline, since
+       they're already handled by the table's own horizontal scroll). */
+    .form-actions     { flex-direction: column; align-items: stretch; }
+    .form-actions .btn { width: 100%; justify-content: center; }
+
+    .pagination-wrapper { justify-content: center; }
+
+    /* Keep the profile icon (still fully tappable) but drop the name
+       text — there's rarely room for both it and the logout icon
+       once the sidebar toggle + page context also need space. */
+    .user-name-text { display: none; }
+    .user-name      { padding: var(--space-2); }
+}
