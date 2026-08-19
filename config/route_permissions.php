@@ -3,9 +3,12 @@
 declare(strict_types=1);
 
 /**
- * Central route-level authorization map. Domain policies remain responsible
- * for record-level checks; this map prevents authenticated users from
- * reaching sensitive controllers without the corresponding capability.
+ * Central route-level authorization map.
+ *
+ * The first permission is the granular capability. Additional entries are
+ * deliberate legacy compatibility permissions used during the Phase 2
+ * migration so existing roles are not silently locked out. Record-level
+ * policies remain responsible for object scope.
  */
 return [
     'GET' => [
@@ -14,12 +17,12 @@ return [
         '#^/gatepasses/create$#' => ['gatepass.create'],
         '#^/gatepasses/\d+$#' => ['gatepass.view'],
         '#^/gatepasses/\d+/edit$#' => ['gatepass.update'],
-        '#^/visitors$#' => ['visitors.view'],
-        '#^/visitors/create$#' => ['visitors.create'],
-        '#^/visitors/\d+$#' => ['visitors.view'],
-        '#^/visitors/\d+/edit$#' => ['visitors.update'],
-        '#^/visits$#' => ['visits.view'],
-        '#^/visits/create$#' => ['visits.create'],
+        '#^/visitors$#' => ['visitors.view', 'gatepass.view_all'],
+        '#^/visitors/create$#' => ['visitors.create', 'gatepass.create'],
+        '#^/visitors/\d+$#' => ['visitors.view', 'gatepass.view_all'],
+        '#^/visitors/\d+/edit$#' => ['visitors.update', 'gatepass.update'],
+        '#^/visits$#' => ['visits.view', 'gatepass.view'],
+        '#^/visits/create$#' => ['visits.create', 'gatepass.create'],
         '#^/roles$#' => ['roles.view'],
         '#^/roles/create$#' => ['roles.create'],
         '#^/roles/\d+/edit$#' => ['roles.update'],
@@ -39,8 +42,8 @@ return [
         '#^/settings/users/\d+/edit$#' => ['users.update'],
         '#^/settings/users/profile$#' => ['dashboard.access'],
         '#^/settings/delegation$#' => ['delegation.view'],
-        '#^/reports$#' => ['reports.view'],
-        '#^/reports/(gatepasses|visitors|visits)$#' => ['reports.view'],
+        '#^/reports$#' => ['reports.view', 'gatepass.view_all'],
+        '#^/reports/(gatepasses|visitors|visits)$#' => ['reports.view', 'gatepass.view_all'],
         '#^/reports/audit-logs$#' => ['audit.view'],
     ],
     'POST' => [
@@ -49,14 +52,14 @@ return [
         '#^/gatepasses/\d+/delete$#' => ['gatepass.delete'],
         '#^/gatepasses/\d+/checkin$#' => ['gatepass.checkin'],
         '#^/gatepasses/\d+/checkout$#' => ['gatepass.checkout'],
-        '#^/visitors$#' => ['visitors.create'],
-        '#^/visitors/\d+/update$#' => ['visitors.update'],
-        '#^/visitors/\d+/(?:blacklist|unblacklist)$#' => ['visitors.blacklist'],
-        '#^/visits$#' => ['visits.create'],
-        '#^/visits/\d+/checkin$#' => ['visits.checkin'],
-        '#^/visits/\d+/checkout$#' => ['visits.checkout'],
-        '#^/badges/\d+/issue$#' => ['badges.issue'],
-        '#^/badges/\d+/return$#' => ['badges.return'],
+        '#^/visitors$#' => ['visitors.create', 'gatepass.create'],
+        '#^/visitors/\d+/update$#' => ['visitors.update', 'gatepass.update'],
+        '#^/visitors/\d+/(?:blacklist|unblacklist)$#' => ['visitors.blacklist', 'gatepass.update'],
+        '#^/visits$#' => ['visits.create', 'gatepass.create'],
+        '#^/visits/\d+/checkin$#' => ['visits.checkin', 'gatepass.checkin'],
+        '#^/visits/\d+/checkout$#' => ['visits.checkout', 'gatepass.checkout'],
+        '#^/badges/\d+/issue$#' => ['badges.issue', 'gatepass.checkin'],
+        '#^/badges/\d+/return$#' => ['badges.return', 'gatepass.checkout'],
         '#^/roles$#' => ['roles.create'],
         '#^/roles/\d+$#' => ['roles.update'],
         '#^/roles/\d+/delete$#' => ['roles.update'],
@@ -76,7 +79,7 @@ return [
         '#^/settings/users/profile$#' => ['dashboard.access'],
         '#^/settings/delegation$#' => ['delegation.manage'],
         '#^/settings/delegation/clear$#' => ['delegation.manage'],
-        '#^/reports/(gatepasses|visitors|visits)/export$#' => ['reports.export'],
+        '#^/reports/(gatepasses|visitors|visits)/export$#' => ['reports.export', 'gatepass.view_all'],
         '#^/reports/audit-logs/export$#' => ['audit.export'],
     ],
 ];
