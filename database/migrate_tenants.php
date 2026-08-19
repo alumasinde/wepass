@@ -29,6 +29,7 @@ const INCREMENTAL_MIGRATIONS = [
     '012_gatepass_type_direction.sql',
     '013_phase4_state_machine.sql',
     '014_returnable_item_history.sql',
+    '015_phase4_returned_status.sql',
 ];
 
 $root = dirname(__DIR__);
