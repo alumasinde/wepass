@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Auth\Repositories;
 
 use App\Core\DB;
@@ -43,6 +45,7 @@ class UserRepository
                 u.email,
                 u.password_hash,
                 u.department_id,
+                u.auth_version,
                 r.id   AS role_id,
                 r.name AS role
             FROM users u
@@ -58,6 +61,54 @@ class UserRepository
         ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Return only the fields required to validate an existing session.
+     * This deliberately avoids loading the full user record on every
+     * authenticated request.
+     */
+    public function getSessionSecurityState(int $userId): ?array
+    {
+        $stmt = $this->db->prepare("
+            SELECT is_active, auth_version
+            FROM users
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $stmt->execute([':id' => $userId]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'is_active'    => (bool) $row['is_active'],
+            'auth_version' => (int) $row['auth_version'],
+        ];
+    }
+
+    /**
+     * Increment the user's authentication version. Any session that
+     * contains the previous version becomes invalid on its next request.
+     */
+    public function bumpAuthVersion(int $userId): void
+    {
+        $stmt = $this->db->prepare("
+            UPDATE users
+            SET auth_version = auth_version + 1,
+                updated_at   = :now
+            WHERE id = :id
+        ");
+        $stmt->execute([
+            ':id'  => $userId,
+            ':now' => $this->now(),
+        ]);
+
+        if ($stmt->rowCount() !== 1) {
+            throw new RuntimeException('Failed to invalidate user sessions.');
+        }
     }
 
     // ── PASSWORD RESET ───────────────────────────────────────
@@ -131,6 +182,7 @@ class UserRepository
                 SET password_hash = :password,
                     reset_token   = NULL,
                     reset_expires = NULL,
+                    auth_version  = auth_version + 1,
                     updated_at    = :now
                 WHERE id = :id
                   AND reset_token = :token
