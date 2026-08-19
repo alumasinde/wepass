@@ -9,18 +9,16 @@ use App\Core\DB;
 use PDO;
 use RuntimeException;
 
-/**
- * Phase 4 state-transition boundary.
- * Every controlled status change is conditional on the expected
- * current state and produces an immutable transition record.
- */
+/** Phase 4 authoritative state boundary. */
 final class GatepassStateService
 {
     private PDO $db;
+    private bool $ownsTransaction;
 
-    public function __construct()
+    public function __construct(?PDO $db = null)
     {
-        $this->db = DB::connect();
+        $this->db = $db ?? DB::connect();
+        $this->ownsTransaction = $db === null;
     }
 
     public function transition(
@@ -41,22 +39,25 @@ final class GatepassStateService
 
         GatepassTransitionGuard::assert($fromStatusCode, $toStatusCode, $transitionCode);
 
-        $this->db->beginTransaction();
+        if ($this->ownsTransaction) {
+            $this->db->beginTransaction();
+        }
+
         try {
             $status = $this->db->prepare(
                 'SELECT id, code FROM gatepass_statuses WHERE code IN (:from_code, :to_code)'
             );
             $status->execute([
-                ':from_code' => strtoupper($fromStatusCode),
-                ':to_code' => strtoupper($toStatusCode),
+                ':from_code' => strtolower($fromStatusCode),
+                ':to_code' => strtolower($toStatusCode),
             ]);
 
             $ids = [];
             foreach ($status->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                $ids[strtoupper((string) $row['code'])] = (int) $row['id'];
+                $ids[strtolower((string) $row['code'])] = (int) $row['id'];
             }
-            $fromId = $ids[strtoupper($fromStatusCode)] ?? null;
-            $toId = $ids[strtoupper($toStatusCode)] ?? null;
+            $fromId = $ids[strtolower($fromStatusCode)] ?? null;
+            $toId = $ids[strtolower($toStatusCode)] ?? null;
             if (!$fromId || !$toId) {
                 throw new RuntimeException('Unknown gatepass status.');
             }
@@ -89,16 +90,18 @@ final class GatepassStateService
                 ':metadata' => $metadata ? json_encode($metadata, JSON_UNESCAPED_SLASHES) : null,
             ]);
 
-            $this->db->commit();
-            Audit::log('gatepass.state_transition', 'gatepass', $gatepassId, [
-                'from' => strtoupper($fromStatusCode),
-                'to' => strtoupper($toStatusCode),
-                'transition' => $transitionCode,
-                'actor_user_id' => $actorUserId,
-            ]);
+            if ($this->ownsTransaction) {
+                $this->db->commit();
+                Audit::log('gatepass.state_transition', 'gatepass', $gatepassId, [
+                    'from' => strtolower($fromStatusCode),
+                    'to' => strtolower($toStatusCode),
+                    'transition' => $transitionCode,
+                    'actor_user_id' => $actorUserId,
+                ]);
+            }
             return true;
         } catch (\Throwable $e) {
-            if ($this->db->inTransaction()) {
+            if ($this->ownsTransaction && $this->db->inTransaction()) {
                 $this->db->rollBack();
             }
             throw $e;
@@ -121,7 +124,6 @@ final class GatepassStateService
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** Mark only active, unexpired gatepasses as expired. */
     public function expireDueGatepasses(int $batchSize = 200): int
     {
         $batchSize = max(1, min($batchSize, 1000));
@@ -132,7 +134,7 @@ final class GatepassStateService
              WHERE g.deleted_at IS NULL
                AND g.expires_at IS NOT NULL
                AND g.expires_at <= NOW()
-               AND s.code IN (\'PENDING\', \'APPROVED\')
+               AND s.code IN (\'pending\', \'approved\')
              ORDER BY g.id
              LIMIT ' . $batchSize
         );
@@ -141,11 +143,11 @@ final class GatepassStateService
         $count = 0;
         foreach ($rows as $row) {
             try {
-                if ($this->transition((int)$row['id'], (string)$row['status_code'], 'EXPIRED', 'EXPIRE_SYSTEM')) {
+                if ($this->transition((int)$row['id'], (string)$row['status_code'], 'expired', 'EXPIRE_SYSTEM')) {
                     $count++;
                 }
             } catch (RuntimeException $e) {
-                // A concurrent state change is expected under a worker race.
+                // Concurrent state changes are expected under worker races.
             }
         }
         return $count;
