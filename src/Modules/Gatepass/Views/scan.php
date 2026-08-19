@@ -1,0 +1,14 @@
+<?php $csrf=htmlspecialchars($_SESSION['csrf_token']??''); ?>
+<div class="page-header"><h1 class="page-heading"><i class="fa-solid fa-qrcode"></i> Gate Scanner</h1></div>
+<div class="detail-card" style="max-width:760px"><div class="detail-card__header">Secure Gate Scanner</div><div class="detail-card__body">
+<form id="scanner"><input type="hidden" id="csrf" value="<?= $csrf ?>">
+<div class="form-group"><label>Gate ID</label><input id="gate" class="form-control" type="number" min="1" required></div>
+<div class="form-group"><label>Device UUID</label><input id="uuid" class="form-control" required></div>
+<div class="form-group"><label>Device Secret</label><input id="secret" class="form-control" type="password" required></div>
+<button class="btn btn-secondary" type="button" id="save">Save Device</button>
+</form><hr><video id="camera" autoplay playsinline muted style="width:100%;max-height:420px;background:#111;border-radius:12px"></video><br><button class="btn btn-accent" id="start" type="button">Start Camera</button>
+<form id="manual" style="margin-top:20px"><div class="form-group"><label>QR credential</label><input id="token" class="form-control" required></div><button class="btn btn-primary">Process Scan</button></form><div id="result" style="margin-top:20px"></div>
+</div></div>
+<script>
+(()=>{const q=x=>document.getElementById(x),k='wepass_scanner';try{const s=JSON.parse(localStorage.getItem(k)||'{}');['gate','uuid','secret'].forEach(x=>{if(s[x])q(x).value=s[x]})}catch(e){}q('save').onclick=()=>{localStorage.setItem(k,JSON.stringify({gate:q('gate').value,uuid:q('uuid').value,secret:q('secret').value}));msg('Device saved',1)};function msg(x,ok){q('result').textContent=x;q('result').className=ok?'alert alert-success':'alert alert-danger'}async function scan(t){const f=new FormData();f.append('csrf_token',q('csrf').value);f.append('gate_id',q('gate').value);f.append('device_uuid',q('uuid').value);f.append('device_secret',q('secret').value);f.append('qr_token',t);f.append('request_id',crypto.randomUUID?crypto.randomUUID():String(Date.now()));const r=await fetch('/gatepasses/scan',{method:'POST',headers:{Accept:'application/json'},body:f});const j=await r.json();msg(j.message||'Scan failed',!!j.success)}q('manual').onsubmit=e=>{e.preventDefault();scan(q('token').value.trim())};q('start').onclick=async()=>{try{if(!('BarcodeDetector'in window)){msg('QR camera scanning is not supported by this browser. Use manual entry.');return}const d=new BarcodeDetector({formats:['qr_code']});const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});q('camera').srcObject=s;const loop=async()=>{const c=await d.detect(q('camera')).catch(()=>[]);if(c[0]?.rawValue){s.getTracks().forEach(t=>t.stop());q('token').value=c[0].rawValue;scan(c[0].rawValue);return}requestAnimationFrame(loop)};loop()}catch(e){msg('Unable to access camera.')}}})();
+</script>
