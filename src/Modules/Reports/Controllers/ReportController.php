@@ -3,6 +3,7 @@
 namespace App\Modules\Reports\Controllers;
 
 use App\Core\Controller;
+use App\Core\Permission;
 use App\Core\View;
 use App\Core\Request;
 use App\Modules\Reports\Services\ReportService;
@@ -18,9 +19,7 @@ class ReportController extends Controller
 
     public function index()
     {
-        // FIX: removed tenantId() helper and $tenantId var — summary() takes no tenantId
         $summary = $this->service->summary();
-
         return View::render('Reports::index', [
             'title'   => 'Reports Dashboard',
             'summary' => $summary,
@@ -29,9 +28,7 @@ class ReportController extends Controller
 
     public function gatepasses(Request $request)
     {
-        // FIX: removed $this->tenantId() arg
         $data = $this->service->gatepasses($request->all());
-
         return View::render('Reports::gatepasses', [
             'title' => 'Gatepass Report',
             'data'  => $data,
@@ -41,7 +38,6 @@ class ReportController extends Controller
     public function visitors(Request $request)
     {
         $data = $this->service->visitors($request->all());
-
         return View::render('Reports::visitors', [
             'title' => 'Visitor Report',
             'data'  => $data,
@@ -51,7 +47,6 @@ class ReportController extends Controller
     public function visits(Request $request)
     {
         $data = $this->service->visits($request->all());
-
         return View::render('Reports::visits', [
             'title' => 'Visit Report',
             'data'  => $data,
@@ -61,61 +56,54 @@ class ReportController extends Controller
     public function auditLogs(Request $request)
     {
         $data = $this->service->auditLogs($request->all());
-
         return View::render('Reports::audit', [
             'title' => 'Audit Logs',
             'data'  => $data,
         ], 'app');
     }
 
-    // ───────────────── EXPORTS ─────────────────
-    // FIX: these four routes already existed in routes/web.php but the
-    // controller methods were never implemented — clicking any Export
-    // link on a report page 500'd. Reuses each report's own filters
-    // (via $request->all(), same as the on-screen view) so exporting
-    // after filtering exports the filtered set, not everything.
-
     public function exportGatepasses(Request $request)
     {
+        $this->requireExportPermission();
         $params = $request->all();
-        $params['per_page'] = 100000; // export every matching row, not one paginated page
+        $params['per_page'] = 100000;
         $data = $this->service->gatepasses($params);
-
         return $this->streamCsv('gatepasses-report.csv', $data['data'] ?? []);
     }
 
     public function exportVisitors(Request $request)
     {
+        $this->requireExportPermission();
         $params = $request->all();
         $params['per_page'] = 100000;
         $data = $this->service->visitors($params);
-
         return $this->streamCsv('visitors-report.csv', $data['data'] ?? []);
     }
 
     public function exportVisits(Request $request)
     {
+        $this->requireExportPermission();
         $params = $request->all();
         $params['per_page'] = 100000;
         $data = $this->service->visits($params);
-
         return $this->streamCsv('visits-report.csv', $data['data'] ?? []);
     }
 
     public function exportAuditLogs(Request $request)
     {
+        $this->requireExportPermission(['audit.export']);
         $params = $request->all();
         $params['per_page'] = 100000;
         $data = $this->service->auditLogs($params);
-
         return $this->streamCsv('audit-logs-report.csv', $data['data'] ?? []);
     }
 
-    /**
-     * Column headers are taken from the first row's own keys rather
-     * than a hardcoded list — always matches whatever the underlying
-     * report query actually returns, even if that changes later.
-     */
+    private function requireExportPermission(array $permissions = ['reports.export']): void
+    {
+        $userId = (int) ($_SESSION['user']['id'] ?? 0);
+        Permission::requireAny($userId, $permissions, ['gatepass.view_all']);
+    }
+
     private function streamCsv(string $filename, array $rows): never
     {
         header('Content-Type: text/csv; charset=utf-8');
@@ -124,7 +112,6 @@ class ReportController extends Controller
         header('Expires: 0');
 
         $out = fopen('php://output', 'w');
-
         if (!empty($rows)) {
             fputcsv($out, array_keys($rows[0]));
             foreach ($rows as $row) {
@@ -133,7 +120,6 @@ class ReportController extends Controller
         } else {
             fputcsv($out, ['No data for the selected filters.']);
         }
-
         fclose($out);
         exit;
     }
