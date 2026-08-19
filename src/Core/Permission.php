@@ -11,7 +11,12 @@ final class Permission
     public static function userHasPermission(int $userId, string $permission, ?int $tenantId = null): bool
     {
         $tenantId ??= TenantContext::id();
-        if ($tenantId === null) {
+        if ($tenantId === null || $userId <= 0 || trim($permission) === '') {
+            return false;
+        }
+
+        [$module, $action] = array_pad(explode('.', strtolower(trim($permission)), 2), 2, '');
+        if ($module === '' || $action === '') {
             return false;
         }
 
@@ -21,10 +26,14 @@ final class Permission
              FROM user_roles ur
              INNER JOIN role_permissions rp ON rp.role_id = ur.role_id
              INNER JOIN permissions p ON p.id = rp.permission_id
-             WHERE ur.user_id = ? AND p.name = ? AND p.is_active = 1
+             INNER JOIN modules m ON m.id = p.module_id
+             INNER JOIN actions a ON a.id = p.action_id
+             WHERE ur.user_id = ?
+               AND LOWER(m.name) = ?
+               AND LOWER(a.name) = ?
              LIMIT 1'
         );
-        $stmt->execute([$userId, $permission]);
+        $stmt->execute([$userId, $module, $action]);
 
         return (bool) $stmt->fetchColumn();
     }
@@ -36,6 +45,7 @@ final class Permission
                 return true;
             }
         }
+
         return false;
     }
 }
