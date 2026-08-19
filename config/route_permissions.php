@@ -6,7 +6,7 @@ declare(strict_types=1);
 return [
     'GET' => [
         '#^/dashboard(?:/charts)?$#' => ['dashboard.access'],
-        '#^/gatepasses$#' => ['gatepass.view'], '#^/gatepasses/create$#' => ['gatepass.create'], '#^/gatepasses/scan$#' => ['scans.scan'], '#^/gatepasses/scan-history(?:\.json)?$#' => ['scans.view'], '#^/gatepasses/\d+$#' => ['gatepass.view'], '#^/gatepasses/\d+/edit$#' => ['gatepass.update'],
+        '#^/gatepasses$#' => ['gatepass.view'], '#^/gatepasses/create$#' => ['gatepass.create'], '#^/gatepasses/scan$#' => ['scans.scan'], '#^/gatepasses/scan-history(?:\.json)?$#' => ['scans.view'], '#^/gatepasses/scan-history/export\.csv$#' => ['scans.export'], '#^/gatepasses/\d+$#' => ['gatepass.view'], '#^/gatepasses/\d+/edit$#' => ['gatepass.update'],
         '#^/visitors$#' => ['visitors.view','gatepass.view_all'], '#^/visitors/create$#' => ['visitors.create','gatepass.create'], '#^/visitors/\d+$#' => ['visitors.view','gatepass.view_all'], '#^/visitors/\d+/edit$#' => ['visitors.update','gatepass.update'],
         '#^/visits$#' => ['visits.view','gatepass.view'], '#^/visits/create$#' => ['visits.create','gatepass.create'], '#^/approvals$#' => ['approval.view'], '#^/approvals/\d+$#' => ['approval.view'], '#^/approvals/\d+/approve$#' => ['approval.approve'], '#^/approvals/\d+/reject$#' => ['approval.reject'],
         '#^/roles$#' => ['roles.view'], '#^/roles/create$#' => ['roles.create'], '#^/roles/\d+/edit$#' => ['roles.update'], '#^/roles/\d+/permissions$#' => ['roles.assign'], '#^/users/\d+/roles$#' => ['roles.assign'],
