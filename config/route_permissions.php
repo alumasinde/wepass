@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 /**
  * Central route-level authorization map.
- *
- * The first permission is the granular capability. Additional entries are
- * deliberate legacy compatibility permissions used during the Phase 2
- * migration so existing roles are not silently locked out. Record-level
- * policies remain responsible for object scope.
+ * Domain policies remain responsible for record-level checks.
  */
 return [
     'GET' => [
@@ -23,6 +19,10 @@ return [
         '#^/visitors/\d+/edit$#' => ['visitors.update', 'gatepass.update'],
         '#^/visits$#' => ['visits.view', 'gatepass.view'],
         '#^/visits/create$#' => ['visits.create', 'gatepass.create'],
+        '#^/approvals$#' => ['approval.view'],
+        '#^/approvals/\d+$#' => ['approval.view'],
+        '#^/approvals/\d+/approve$#' => ['approval.approve'],
+        '#^/approvals/\d+/reject$#' => ['approval.reject'],
         '#^/roles$#' => ['roles.view'],
         '#^/roles/create$#' => ['roles.create'],
         '#^/roles/\d+/edit$#' => ['roles.update'],
@@ -60,6 +60,8 @@ return [
         '#^/visits/\d+/checkout$#' => ['visits.checkout', 'gatepass.checkout'],
         '#^/badges/\d+/issue$#' => ['badges.issue', 'gatepass.checkin'],
         '#^/badges/\d+/return$#' => ['badges.return', 'gatepass.checkout'],
+        '#^/approvals/\d+/approve$#' => ['approval.approve'],
+        '#^/approvals/\d+/reject$#' => ['approval.reject'],
         '#^/roles$#' => ['roles.create'],
         '#^/roles/\d+$#' => ['roles.update'],
         '#^/roles/\d+/delete$#' => ['roles.update'],
