@@ -2,19 +2,6 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Permission Blueprint
-    |--------------------------------------------------------------------------
-    |
-    | module => actions[]
-    |
-    | These keys are the canonical authorization vocabulary. The
-    | database stores module/action separately; application checks use
-    | the normalized "module.action" form.
-    |
-    */
-
     'dashboard' => [
         'access'
     ],
@@ -34,8 +21,13 @@ return [
     'visitors' => [
         'create',
         'view',
+        'view_all',
         'update',
-        'blacklist'
+        'update_all',
+        'delete',
+        'blacklist',
+        'manage',
+        'issue_badge'
     ],
 
     'visits' => [
@@ -85,5 +77,4 @@ return [
         'view',
         'manage'
     ]
-
 ];
