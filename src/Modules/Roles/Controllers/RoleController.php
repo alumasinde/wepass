@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Roles\Controllers;
 
 use App\Core\Controller;
+use App\Core\Permission;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
@@ -25,11 +28,16 @@ class RoleController extends Controller
         return $_SESSION['user'];
     }
 
+    private function requirePermission(string $permission): array
+    {
+        $user = $this->user();
+        Permission::requireAny((int) $user['id'], [$permission]);
+        return $user;
+    }
+
     public function index(Request $request)
     {
-        $this->user();
-
-        // FIX: was $this->service->all($tenantId) — $tenantId undefined; all() no longer takes tenantId
+        $this->requirePermission('roles.view');
         $roles = $this->service->all();
 
         return View::render('Roles::index', [
@@ -40,12 +48,13 @@ class RoleController extends Controller
 
     public function create(Request $request)
     {
+        $this->requirePermission('roles.create');
         return View::render('Roles::create', ['title' => 'Create Role'], 'app');
     }
 
     public function store(Request $request)
     {
-        $this->user();
+        $this->requirePermission('roles.create');
 
         $name = trim((string) $request->input('name'));
         if ($name === '') {
@@ -60,7 +69,7 @@ class RoleController extends Controller
 
     public function edit(Request $request, $id)
     {
-        $this->user();
+        $this->requirePermission('roles.update');
 
         $roleId = (int) $id;
         if ($roleId <= 0) {
@@ -77,7 +86,7 @@ class RoleController extends Controller
 
     public function update(Request $request, $id)
     {
-        $this->user();
+        $this->requirePermission('roles.update');
 
         $roleId = (int) $id;
         if ($roleId <= 0) {
@@ -100,7 +109,7 @@ class RoleController extends Controller
 
     public function delete(Request $request, $id)
     {
-        $this->user();
+        $this->requirePermission('roles.update');
 
         $roleId = (int) $id;
         if ($roleId <= 0) {
@@ -118,17 +127,16 @@ class RoleController extends Controller
 
     public function permissions(Request $request, $id)
     {
-        $this->user();
+        $this->requirePermission('roles.assign');
 
-        // FIX: was reading non-existent $_SESSION['user']['tenant_id']
         $roleId = (int) $id;
         if (!$role = $this->service->find($roleId)) {
             Response::abort(404);
         }
 
-        $rolePermissions    = $this->service->getRolePermissions($roleId);
-        $rolePermissionIds  = array_column($rolePermissions, 'id');
-        $allPermissions     = $this->service->allPermissions();
+        $rolePermissions   = $this->service->getRolePermissions($roleId);
+        $rolePermissionIds = array_column($rolePermissions, 'id');
+        $allPermissions    = $this->service->allPermissions();
 
         return View::render('Roles::permissions', [
             'role'            => $role,
@@ -140,7 +148,7 @@ class RoleController extends Controller
 
     public function updatePermissions(Request $request, $id)
     {
-        $this->user();
+        $this->requirePermission('roles.assign');
 
         $roleId = (int) $id;
         if ($roleId <= 0) {
