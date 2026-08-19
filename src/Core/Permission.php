@@ -48,4 +48,23 @@ final class Permission
 
         return false;
     }
+
+    /**
+     * Require at least one permission. The optional fallback list is
+     * intentionally supported during the Phase 2 migration so existing
+     * installations keep their current capabilities while administrators
+     * move to the more granular permission vocabulary.
+     */
+    public static function requireAny(int $userId, array $permissions, array $fallbackPermissions = []): void
+    {
+        if (self::userHasAnyPermission($userId, $permissions)) {
+            return;
+        }
+
+        if ($fallbackPermissions !== [] && self::userHasAnyPermission($userId, $fallbackPermissions)) {
+            return;
+        }
+
+        Response::abort(403);
+    }
 }
