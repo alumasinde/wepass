@@ -19,6 +19,12 @@ return [
 
     'badges' => ['view', 'issue', 'return'],
 
+    'gates' => ['view', 'create', 'update', 'disable'],
+
+    'devices' => ['view', 'approve', 'revoke', 'assign'],
+
+    'scans' => ['view', 'scan', 'export'],
+
     'users' => ['create', 'view', 'update', 'disable'],
 
     'roles' => ['view', 'create', 'assign', 'update'],
@@ -31,6 +37,5 @@ return [
 
     'delegation' => ['view', 'manage'],
 
-    // ApprovalPolicy already relies on these normalized capabilities.
     'approval' => ['view', 'approve', 'reject'],
 ];
