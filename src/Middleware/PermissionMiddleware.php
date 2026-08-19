@@ -32,7 +32,13 @@ final class PermissionMiddleware
             Response::abort(403, 'Tenant context unavailable.');
         }
 
-        if (!Permission::userHasPermission($userId, $permission, TenantContext::id())) {
+        $tenant = TenantContext::tenant();
+        $tenantId = isset($tenant['id']) && is_numeric($tenant['id']) ? (int) $tenant['id'] : null;
+        if ($tenantId === null || $tenantId <= 0) {
+            Response::abort(403, 'Tenant context unavailable.');
+        }
+
+        if (!Permission::userHasPermission($userId, $permission, $tenantId)) {
             Response::abort(403);
         }
     }
