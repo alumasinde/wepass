@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Auth\Services;
 
 use App\Modules\Auth\Repositories\UserRepository;
@@ -57,7 +59,8 @@ class AuthService
         $permission = new Permission(DB::connect());
         $permission->loadForUser((int) $user['id']);
 
-        // Store session
+        // Store session. auth_version is the server-side revocation
+        // anchor checked by AuthMiddleware on every authenticated request.
         $_SESSION['user'] = [
             'id'            => (int) $user['id'],
             'email'         => $user['email'],
@@ -67,6 +70,7 @@ class AuthService
             'role_id'       => $user['role_id'],
             'department_id' => isset($user['department_id']) ? (int) $user['department_id'] : null,
         ];
+        $_SESSION['auth_version'] = (int) ($user['auth_version'] ?? 1);
 
         // Tenant context
         Tenant::set([
@@ -141,16 +145,11 @@ class AuthService
             . '<p><a href="' . $resetUrl . '">' . $resetUrl . '</a></p>'
             . '<p>If you did not request this, you can safely ignore this email &mdash; your password will not change.</p>';
 
-        // Failures are logged to mail_log and swallowed by Mailer —
-        // never let an SMTP outage surface as an error to the caller,
-        // since PasswordController already gives a generic "if the
-        // email exists" response either way.
         Mailer::send($email, "Reset your {$tenant} password", $html);
     }
 
     public function resetPassword(string $rawToken, string $password): void
     {
-        // Basic password policy (extend as needed)
         if (strlen($password) < 8) {
             throw new RuntimeException('Password must be at least 8 characters.');
         }
@@ -161,6 +160,8 @@ class AuthService
             throw new RuntimeException('Invalid or expired reset token.');
         }
 
+        // resetPasswordWithToken atomically changes the password and
+        // increments auth_version, revoking all existing sessions.
         $this->users->resetPasswordWithToken(
             (int) $user['id'],
             $rawToken,

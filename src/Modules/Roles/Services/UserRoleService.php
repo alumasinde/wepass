@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Roles\Services;
 
 use App\Core\DB;
@@ -15,7 +17,6 @@ class UserRoleService
         $this->db = DB::connect();
     }
 
-    // FIX: was `int int $userId`
     public function getUserRoles(int $userId): array
     {
         $stmt = $this->db->prepare("
@@ -29,7 +30,6 @@ class UserRoleService
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // FIX: was `int int $userId`
     public function getUserRoleIds(int $userId): array
     {
         $stmt = $this->db->prepare("SELECT role_id FROM user_roles WHERE user_id = ?");
@@ -37,13 +37,17 @@ class UserRoleService
         return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
-    // FIX: was `int int $userId`; INSERT had 2 cols but 3 placeholders
+    /**
+     * Replace a user's roles atomically and revoke existing sessions.
+     * The revocation happens in the same transaction as the role change,
+     * so a successful role update can never leave the old session
+     * authorization active.
+     */
     public function assignRoles(int $userId, array $roleIds): bool
     {
         $this->db->beginTransaction();
 
         try {
-            // Validate user exists
             $userCheck = $this->db->prepare("SELECT id FROM users WHERE id = ? LIMIT 1");
             $userCheck->execute([$userId]);
             if (!$userCheck->fetchColumn()) {
@@ -52,36 +56,45 @@ class UserRoleService
 
             $this->db->prepare("DELETE FROM user_roles WHERE user_id = ?")->execute([$userId]);
 
-            if (empty($roleIds)) {
-                $this->db->commit();
-                return true;
+            $validRoleIds = [];
+
+            if (!empty($roleIds)) {
+                $roleIds = array_unique(array_filter(array_map('intval', $roleIds)));
+
+                if ($roleIds) {
+                    $placeholders = implode(',', array_fill(0, count($roleIds), '?'));
+                    $roleCheck    = $this->db->prepare("SELECT id FROM roles WHERE id IN ({$placeholders})");
+                    $roleCheck->execute($roleIds);
+                    $validRoleIds = array_map('intval', $roleCheck->fetchAll(PDO::FETCH_COLUMN));
+                }
             }
 
-            $roleIds = array_unique(array_filter(array_map('intval', $roleIds)));
-
-            // Validate roles exist
-            $placeholders = implode(',', array_fill(0, count($roleIds), '?'));
-            $roleCheck    = $this->db->prepare("SELECT id FROM roles WHERE id IN ({$placeholders})");
-            $roleCheck->execute($roleIds);
-            $validRoleIds = array_map('intval', $roleCheck->fetchAll(PDO::FETCH_COLUMN));
-
-            if (empty($validRoleIds)) {
-                $this->db->commit();
-                return true;
-            }
-
-            // FIX: INSERT has 2 columns (user_id, role_id), so 2 placeholders
             $insert = $this->db->prepare("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)");
-
             foreach ($validRoleIds as $rid) {
                 $insert->execute([$userId, $rid]);
+            }
+
+            // Any change to role membership changes effective authorization.
+            // Incrementing auth_version revokes every existing session.
+            $revoke = $this->db->prepare("
+                UPDATE users
+                SET auth_version = auth_version + 1,
+                    updated_at   = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ");
+            $revoke->execute([$userId]);
+
+            if ($revoke->rowCount() !== 1) {
+                throw new RuntimeException('Failed to invalidate user sessions.');
             }
 
             $this->db->commit();
             return true;
 
         } catch (\Throwable $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }

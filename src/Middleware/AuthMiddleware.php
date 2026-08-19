@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Middleware;
 
 use App\Core\Auth;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\TenantContext;
+use App\Modules\Auth\Repositories\UserRepository;
 
 class AuthMiddleware
 {
@@ -16,7 +19,46 @@ class AuthMiddleware
             exit;
         }
 
+        if (!$this->sessionIsCurrent()) {
+            Auth::logout();
+            Response::redirect('/login');
+            exit;
+        }
+
         $this->guardTenantBinding();
+    }
+
+    /**
+     * Server-side session revocation.
+     *
+     * The session stores the user's auth_version at login. Password
+     * resets and role/security changes can increment the database
+     * value, invalidating every older session without requiring us
+     * to maintain a server-side session list.
+     */
+    private function sessionIsCurrent(): bool
+    {
+        $userId = Auth::id();
+        $sessionVersion = $_SESSION['auth_version'] ?? null;
+
+        if ($userId === null || !is_int($sessionVersion) && !ctype_digit((string) $sessionVersion)) {
+            return false;
+        }
+
+        try {
+            $state = (new UserRepository())->getSessionSecurityState($userId);
+        } catch (\Throwable $e) {
+            // Fail closed. A security-state lookup failure must not turn
+            // into an implicit authentication bypass.
+            error_log('[AuthMiddleware] Session security lookup failed: ' . $e->getMessage());
+            return false;
+        }
+
+        if ($state === null || !$state['is_active']) {
+            return false;
+        }
+
+        return (int) $sessionVersion === (int) $state['auth_version'];
     }
 
     /**
@@ -33,12 +75,8 @@ class AuthMiddleware
      *
      * A session cookie issued after logging in on one tenant's
      * subdomain, replayed against a different tenant's subdomain
-     * (trivial outside a real browser — just set the Host header on
-     * the request; no same-origin protection applies to that), would
-     * previously have been accepted as authenticated there too,
-     * using the cached user id/permissions from the wrong tenant
-     * against the new tenant's actual database. This closes that gap
-     * by forcing a fresh login whenever the two don't match.
+     * would previously have been accepted as authenticated there too.
+     * This forces a fresh login whenever the two don't match.
      */
     private function guardTenantBinding(): void
     {
@@ -50,10 +88,7 @@ class AuthMiddleware
 
         // Legacy static single-tenant deployments (no [platform]
         // base_domain configured) have no per-request dynamic tenant
-        // to compare against — there's nothing to bind here, and the
-        // cross-tenant replay this guards against isn't possible in
-        // that mode (one deployment = one tenant DB, fixed at
-        // config.ini level, not resolved per request).
+        // to compare against.
         if ($currentTenantCode === null) {
             return;
         }
