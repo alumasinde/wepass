@@ -10,8 +10,8 @@ use RuntimeException;
 
 /**
  * Coordinates workflow outcomes with the authoritative gatepass state.
- * Approval/rejection/cancellation paths must use this boundary instead
- * of writing gatepasses.status_id directly.
+ * Approval/rejection/cancellation/return completion paths must use
+ * this boundary instead of writing gatepasses.status_id directly.
  */
 final class GatepassWorkflowTransitionService
 {
@@ -43,6 +43,11 @@ final class GatepassWorkflowTransitionService
             throw new RuntimeException('A cancellation reason is required.');
         }
         return $this->transitionFromCurrent($gatepassId, 'CANCELLED', 'CANCEL_WORKFLOW', $actorUserId, $reason);
+    }
+
+    public function completeReturn(int $gatepassId, int $actorUserId, ?string $reason = null): bool
+    {
+        return $this->transitionFromCurrent($gatepassId, 'RETURNED', 'RETURN_COMPLETE', $actorUserId, $reason);
     }
 
     private function transitionFromCurrent(
