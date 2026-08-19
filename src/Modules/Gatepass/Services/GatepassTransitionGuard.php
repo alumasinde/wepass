@@ -13,7 +13,7 @@ use RuntimeException;
  */
 final class GatepassTransitionGuard
 {
-    private const TERMINAL = ['rejected', 'cancelled', 'expired'];
+    private const TERMINAL = ['rejected', 'cancelled', 'expired', 'returned'];
 
     /** @var array<string, string[]> */
     private const ALLOWED = [
@@ -21,7 +21,7 @@ final class GatepassTransitionGuard
         'submitted' => ['approved', 'rejected', 'cancelled', 'expired'],
         'approved' => ['checked_out', 'checked_in', 'cancelled', 'expired'],
         'checked_out' => ['checked_in'],
-        'checked_in' => ['checked_out'],
+        'checked_in' => ['checked_out', 'returned'],
     ];
 
     public static function assert(string $from, string $to, string $transition): void
