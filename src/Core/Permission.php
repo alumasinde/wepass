@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Core\TenantContext;
+use App\Core\Response;
 
 final class Permission
 {
@@ -50,10 +51,9 @@ final class Permission
     }
 
     /**
-     * Require at least one permission. The optional fallback list is
-     * intentionally supported during the Phase 2 migration so existing
-     * installations keep their current capabilities while administrators
-     * move to the more granular permission vocabulary.
+     * Require at least one permission. The fallback list is temporary
+     * compatibility for installations upgrading to the granular Phase 2
+     * permission model; it can be removed once roles are migrated.
      */
     public static function requireAny(int $userId, array $permissions, array $fallbackPermissions = []): void
     {
