@@ -15,18 +15,22 @@ final class VisitorPolicy
     public function view(): bool
     {
         return $this->permission->can('visitors.view')
-            || $this->permission->can('visitors.view_all');
+            || $this->permission->can('visitors.view_all')
+            || $this->permission->can('gatepass.view')
+            || $this->permission->can('gatepass.view_all');
     }
 
     public function create(): bool
     {
-        return $this->permission->can('visitors.create');
+        return $this->permission->can('visitors.create')
+            || $this->permission->can('gatepass.create');
     }
 
     public function update(): bool
     {
         return $this->permission->can('visitors.update')
-            || $this->permission->can('visitors.update_all');
+            || $this->permission->can('visitors.update_all')
+            || $this->permission->can('gatepass.update');
     }
 
     public function delete(): bool
@@ -42,11 +46,11 @@ final class VisitorPolicy
 
     public function canViewRecord(array $visitor): bool
     {
-        if ($this->permission->can('visitors.view_all')) {
+        if ($this->permission->can('visitors.view_all') || $this->permission->can('gatepass.view_all')) {
             return true;
         }
 
-        return $this->permission->can('visitors.view')
+        return ($this->permission->can('visitors.view') || $this->permission->can('gatepass.view'))
             && $this->ownedByCurrentUser($visitor);
     }
 
@@ -56,7 +60,7 @@ final class VisitorPolicy
             return true;
         }
 
-        return $this->permission->can('visitors.update')
+        return ($this->permission->can('visitors.update') || $this->permission->can('gatepass.update'))
             && $this->ownedByCurrentUser($visitor);
     }
 
@@ -66,7 +70,7 @@ final class VisitorPolicy
             return true;
         }
 
-        return $this->permission->can('visitors.blacklist')
+        return ($this->permission->can('visitors.blacklist') || $this->permission->can('gatepass.update'))
             && $this->ownedByCurrentUser($visitor);
     }
 
