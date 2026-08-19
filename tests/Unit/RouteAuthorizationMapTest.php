@@ -45,11 +45,7 @@ final class RouteAuthorizationMapTest extends TestCase
         foreach ($this->routeRules() as $method => $rules) {
             foreach ($rules as $pattern => $permissions) {
                 preg_match($pattern, '/__authorization_probe__');
-                self::assertSame(
-                    PREG_NO_ERROR,
-                    preg_last_error(),
-                    "Invalid authorization regex for {$method}: {$pattern}"
-                );
+                self::assertSame(PREG_NO_ERROR, preg_last_error(), "Invalid authorization regex for {$method}: {$pattern}");
                 self::assertNotEmpty($permissions);
             }
         }
@@ -58,34 +54,19 @@ final class RouteAuthorizationMapTest extends TestCase
     public function test_sensitive_routes_have_explicit_authorization_entries(): void
     {
         $rules = $this->routeRules();
-
         $required = [
             'GET' => [
-                '/gatepasses',
-                '/gatepasses/123',
-                '/visitors',
-                '/visitors/123',
-                '/visits',
-                '/roles',
-                '/settings',
-                '/settings/users',
-                '/reports',
-                '/reports/audit-logs',
+                '/gatepasses', '/gatepasses/123', '/visitors', '/visitors/123',
+                '/visits', '/approvals', '/approvals/123', '/approvals/123/approve',
+                '/approvals/123/reject', '/roles', '/settings', '/settings/users',
+                '/reports', '/reports/audit-logs',
             ],
             'POST' => [
-                '/gatepasses',
-                '/gatepasses/123',
-                '/gatepasses/123/checkin',
-                '/gatepasses/123/checkout',
-                '/visitors',
-                '/visitors/123/update',
-                '/visits/123/checkin',
-                '/visits/123/checkout',
-                '/badges/123/issue',
-                '/badges/123/return',
-                '/settings/users',
-                '/settings/users/123',
-                '/reports/gatepasses/export',
+                '/gatepasses', '/gatepasses/123', '/gatepasses/123/checkin',
+                '/gatepasses/123/checkout', '/visitors', '/visitors/123/update',
+                '/visits/123/checkin', '/visits/123/checkout', '/badges/123/issue',
+                '/badges/123/return', '/approvals/123/approve', '/approvals/123/reject',
+                '/settings/users', '/settings/users/123', '/reports/gatepasses/export',
             ],
         ];
 
@@ -99,7 +80,6 @@ final class RouteAuthorizationMapTest extends TestCase
                         break;
                     }
                 }
-
                 self::assertTrue($matched, "No authorization rule matches {$method} {$uri}");
             }
         }
