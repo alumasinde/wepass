@@ -7,9 +7,8 @@ namespace App\Core;
 final class Permission
 {
     /**
-     * The optional dependency is retained for backwards compatibility with
-     * existing controllers that construct Permission with a DB connection.
-     * Permission queries always use the tenant-aware DB facade.
+     * Optional dependency retained for backwards compatibility with existing
+     * controllers. Authorization is tenant-aware and does not use this value.
      */
     public function __construct(private readonly mixed $connection = null) {}
 
@@ -35,6 +34,12 @@ final class Permission
 
         if (!empty($_SESSION['is_super_admin']) && (int) ($_SESSION['user']['id'] ?? $userId) === $userId) {
             return true;
+        }
+
+        // Login builds this cache from the tenant DB. Auth-version/session
+        // invalidation makes role changes revoke stale sessions.
+        if (isset($_SESSION['permissions']) && is_array($_SESSION['permissions'])) {
+            return !empty($_SESSION['permissions'][$permission]);
         }
 
         $tenantId ??= self::tenantIdFromContext();
