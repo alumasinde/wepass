@@ -23,15 +23,15 @@ final class GateScanController
 
     public function __construct()
     {
-        $this->security = new GateSecurityService();
-        $this->decisions = new GateScanDecisionService($this->security);
-        $this->execution = new GateScanExecutionService();
-        $this->idempotency = new ScanIdempotencyService();
+        $this->security=new GateSecurityService();
+        $this->decisions=new GateScanDecisionService($this->security);
+        $this->execution=new GateScanExecutionService();
+        $this->idempotency=new ScanIdempotencyService();
     }
 
     public function index(Request $request): void
     {
-        View::render('Gatepass::scan', ['title'=>'Gate Scanner','user'=>$_SESSION['user']??null], 'app');
+        View::render('Gatepass::scan',['title'=>'Gate Scanner','user'=>$_SESSION['user']??null],'app');
     }
 
     public function process(Request $request): never
@@ -66,16 +66,21 @@ final class GateScanController
             }
 
             $decision=$this->decisions->decide($deviceUuid,$deviceSecret,$gateId,$qrToken,(int)$user['id'],$scanType);
+            if($decision['decision']!=='ALLOW'){
+                $this->idempotency->complete((int)$claim['event_id'],[
+                    'gatepass_id'=>$decision['gatepass_id']??null,'visit_id'=>null,'scan_type'=>$scanType,
+                    'result'=>'denied','reason_code'=>$decision['reason_code'],
+                    'metadata'=>['action'=>'NONE','device_id'=>$decision['device_id']??null],
+                ]);
+                Response::json(['success'=>false,'message'=>'Scan denied.','reason_code'=>$decision['reason_code'],'action'=>'NONE'],409);
+            }
+
+            $executed=$this->execution->execute($decision,(int)$user['id'],date('Y-m-d H:i:s'));
             $this->idempotency->complete((int)$claim['event_id'],[
-                'gatepass_id'=>$decision['gatepass_id']??null,
-                'visit_id'=>null,
-                'scan_type'=>$scanType,
-                'result'=>strtolower($decision['decision']),
-                'reason_code'=>$decision['reason_code'],
-                'metadata'=>['action'=>$decision['action'],'device_id'=>$decision['device_id']??null],
+                'gatepass_id'=>$decision['gatepass_id']??null,'visit_id'=>null,'scan_type'=>$scanType,
+                'result'=>'allowed','reason_code'=>$decision['reason_code'],
+                'metadata'=>['action'=>$decision['action'],'device_id'=>$decision['device_id']??null,'executed_at'=>$executed['executed_at']??null],
             ]);
-            if($decision['decision']!=='ALLOW')Response::json(['success'=>false,'message'=>'Scan denied.','reason_code'=>$decision['reason_code'],'action'=>'NONE'],409);
-            $this->execution->execute($decision,(int)$user['id'],date('Y-m-d H:i:s'));
             $gatepass=$this->security->resolveQrToken($qrToken);
             Response::json(['success'=>true,'message'=>$decision['action']==='CHECK_IN'?'Gatepass checked in successfully.':'Gatepass checked out successfully.','scan_type'=>$scanType,'reason_code'=>$decision['reason_code'],'action'=>$decision['action'],'gate'=>$decision['gate_id'],'gatepass'=>['id'=>(int)$decision['gatepass_id'],'status'=>$gatepass['status_id']??null],'replayed_request'=>false]);
         }catch(Throwable $e){error_log('GateScanController: '.$e->getMessage());Response::json(['success'=>false,'message'=>config('app.debug',false)?$e->getMessage():'Could not process this gatepass.'],400);}
