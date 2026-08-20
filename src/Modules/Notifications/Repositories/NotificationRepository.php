@@ -35,21 +35,24 @@ final class NotificationRepository
         $limit=max(1,min(100,$limit));
         $this->db->beginTransaction();
         try {
-            $stmt=$this->db->prepare("SELECT * FROM notification_outbox WHERE sent_at IS NULL AND available_at<=NOW() AND (locked_at IS NULL OR locked_at<NOW()-INTERVAL 10 MINUTE) ORDER BY id ASC LIMIT {$limit} FOR UPDATE SKIP LOCKED");
+            $stmt=$this->db->prepare("SELECT * FROM notification_outbox WHERE status='pending' AND sent_at IS NULL AND failed_at IS NULL AND available_at<=NOW() AND (locked_at IS NULL OR locked_at<NOW()-INTERVAL 10 MINUTE) ORDER BY id ASC LIMIT {$limit} FOR UPDATE SKIP LOCKED");
             $stmt->execute();$rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
-            if($rows){$ids=array_column($rows,'id');$placeholders=implode(',',array_fill(0,count($ids),'?'));$lock=$this->db->prepare("UPDATE notification_outbox SET locked_at=NOW(),attempts=attempts+1 WHERE id IN ({$placeholders})");$lock->execute($ids);}
-            $this->db->commit();return $rows;
+            if($rows){$ids=array_column($rows,'id');$placeholders=implode(',',array_fill(0,count($ids),'?'));$lock=$this->db->prepare("UPDATE notification_outbox SET status='processing',locked_at=NOW(),attempts=attempts+1,updated_at=NOW() WHERE id IN ({$placeholders})");$lock->execute($ids);}
+            $this->db->commit();
+            foreach($rows as &$row){$row['payload']=isset($row['payload_json'])&&$row['payload_json']!==null?(json_decode((string)$row['payload_json'],true)?:[]):[];}
+            unset($row);
+            return $rows;
         } catch(\Throwable $e){if($this->db->inTransaction())$this->db->rollBack();throw $e;}
     }
 
     public function markDeliverySent(int $id):bool
     {
-        $stmt=$this->db->prepare('UPDATE notification_outbox SET sent_at=NOW(),locked_at=NULL,last_error=NULL WHERE id=:id AND sent_at IS NULL');$stmt->execute([':id'=>$id]);return $stmt->rowCount()>0;
+        $stmt=$this->db->prepare("UPDATE notification_outbox SET status='sent',sent_at=NOW(),locked_at=NULL,last_error=NULL,updated_at=NOW() WHERE id=:id AND status='processing' AND sent_at IS NULL AND failed_at IS NULL");$stmt->execute([':id'=>$id]);return $stmt->rowCount()>0;
     }
 
     public function markDeliveryFailed(int $id,string $error):bool
     {
-        $stmt=$this->db->prepare('UPDATE notification_outbox SET available_at=DATE_ADD(NOW(),INTERVAL LEAST(3600,POW(2,LEAST(attempts,10))) SECOND),locked_at=NULL,last_error=:error WHERE id=:id AND sent_at IS NULL');$stmt->execute([':id'=>$id,':error'=>mb_substr($error,0,2000)]);return $stmt->rowCount()>0;
+        $stmt=$this->db->prepare("UPDATE notification_outbox SET status=CASE WHEN attempts>=5 THEN 'failed' ELSE 'pending' END,available_at=DATE_ADD(NOW(),INTERVAL LEAST(3600,POW(2,LEAST(attempts,10))) SECOND),locked_at=NULL,failed_at=CASE WHEN attempts>=5 THEN NOW() ELSE NULL END,last_error=:error,updated_at=NOW() WHERE id=:id AND status='processing' AND sent_at IS NULL");$stmt->execute([':id'=>$id,':error'=>mb_substr($error,0,2000)]);return $stmt->rowCount()>0;
     }
 
     public function unreadForUser(int $userId,int $limit=50):array{$limit=max(1,min(100,$limit));$stmt=$this->db->prepare("SELECT id,event_code,title,body,data_json,read_at,created_at FROM notifications WHERE user_id=:user_id ORDER BY created_at DESC LIMIT {$limit}");$stmt->execute([':user_id'=>$userId]);return $stmt->fetchAll(PDO::FETCH_ASSOC);}
